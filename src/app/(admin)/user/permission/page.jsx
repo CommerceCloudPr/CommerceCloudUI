@@ -10,7 +10,7 @@ const UserPermission = () => {
     const [name, setName] = useState('')
     const [users, setUsers] = useState([])
     const [selectedUser, setSelectedUser] = useState("")
-    const [selectedPermission, setSelectedPermission] = useState("")
+    const [userPermissionList, setUserPermissionList] = useState([])
 
     useEffect(() => {
         fetch('http://api-dev.aykutcandan.com/user/module/get-all',
@@ -22,7 +22,24 @@ const UserPermission = () => {
             }
         )
             .then((res) => res.json())
-            .then((res) => setModules(res.data))
+            .then((res) => {
+                function sortPermissionsByAction(modules) {
+                    const order = ["READ", "CREATE", "UPDATE", "DELETE"];
+
+                    return modules.map(module => {
+                        const sortedPermissions = [...module.permissions].sort((a, b) => {
+                            return order.indexOf(a.action) - order.indexOf(b.action);
+                        });
+
+                        return {
+                            ...module,
+                            permissions: sortedPermissions
+                        };
+                    });
+                }
+                setModules(sortPermissionsByAction(res.data))
+
+            })
             .catch((err) => console.log(err))
 
         fetch('http://api-dev.aykutcandan.com/user/info/get-all',
@@ -37,45 +54,53 @@ const UserPermission = () => {
             .then((res) => {
                 setUsers(res.data)
                 setSelectedUser(res.data[0]?.uuid)
+                getUserPermissionList(res.data[0]?.uuid)
             })
             .catch((err) => console.log(err))
     }, [])
 
 
-    const handleCheck = (type, permission, checked) => {
-        const permissionObj = {
-            'moduleUUID': `${permission?.uuid}`,
-            'action': `${type}`
+    const handleCheck = (item, action) => {
+        console.log("geldi")
+        const userPermissionObj = {
+            'permissionsUUID': `${action.uuid}`,
+            'userUUID': `${selectedUser}`,
+            'allow': true
         }
-        fetch('http://api-dev.aykutcandan.com/user/permission/add',
+        fetch(`http://api-dev.aykutcandan.com/user/user-permission/add`,
             {
                 headers: {
                     'Authorization': `Bearer ${decodeURIComponent(session)}`,
                     'Content-Type': 'application/json'
                 },
                 method: 'POST',
-                body: JSON.stringify(permissionObj)
+                body: JSON.stringify(userPermissionObj)
+            }
+        )
+
+    }
+
+    const getUserPermissionList = (user) => {
+        let x = [];
+        fetch(`http://api-dev.aykutcandan.com/user/user-permission/get/userUUID/${user}`,
+            {
+                headers: {
+                    'Authorization': `Bearer ${decodeURIComponent(session)}`,
+                },
+                method: 'GET',
             }
         )
             .then((res) => res.json())
             .then((res) => {
-                const userPermissionObj = {
-                    'permissionsUUID': `${res.data?.uuid}`,
-                    'userUUID': `${selectedUser}`,
-                    'allow': checked
-                }
-                fetch('http://api-dev.aykutcandan.com/user/user-permission/add',
-                    {
-                        headers: {
-                            'Authorization': `Bearer ${decodeURIComponent(session)}`,
-                            'Content-Type': 'application/json'
-                        },
-                        method: 'POST',
-                        body: JSON.stringify(userPermissionObj)
+                res.data.map((item) => {
+                    if (item.permissionsUUID) {
+                        x.push(item.permissionsUUID)
                     }
-                )
+                })
+                console.log(x)
+                setUserPermissionList(x)
             })
-
+            .catch((err) => console.log(err))
     }
 
     return <>
@@ -94,7 +119,10 @@ const UserPermission = () => {
                                         <label htmlFor="roles-name" className="form-label">
                                             Users
                                         </label>
-                                        <FormSelect onChange={(e) => console.log(e)}>
+                                        <FormSelect onChange={(e) => {
+                                            setSelectedUser(e.target.value);
+                                            getUserPermissionList(e.target.value)
+                                        }}>
                                             {
                                                 users.map((item, key) => {
                                                     return <option value={item.uuid}>{item.username}</option>
@@ -107,7 +135,39 @@ const UserPermission = () => {
                         </Row>
                         <Row>
                             <Col lg={6}>
-                                <div className='d-flex w-100 justify-content-between'>
+                                <table cellPadding="5">
+                                    <thead>
+                                        <tr>
+                                            <th>Permission</th>
+                                            <th>Read</th>
+                                            <th>Create</th>
+                                            <th>Update</th>
+                                            <th>Delete</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {modules.map((item, moduleKey) => (
+                                            <tr key={moduleKey}>
+                                                <td>{item.name}</td>
+                                                {item.permissions.map((action) => {
+                                                    return action.moduleUUID === item.uuid && <td key={action}>
+                                                        <FormCheck
+                                                            type="checkbox"
+                                                            onChange={(e) => {
+                                                                console.log(item)
+                                                                console.log(action)
+                                                                handleCheck(item, action)
+                                                            }}
+                                                            //defaultChecked={userPermissionList.includes(action.uuid)}
+                                                            checked={userPermissionList.includes(action.uuid)}
+                                                        />
+                                                    </td>
+                                                })}
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                                {/* <div className='d-flex w-100 justify-content-between'>
                                     <div className='d-flex flex-column justify-content-center '>
                                         <span>Permission</span>
                                         {
@@ -120,7 +180,7 @@ const UserPermission = () => {
                                         <span>Read</span>
                                         {
                                             modules.map((item, key) => {
-                                                return <FormCheck key={key} onChange={(e) => handleCheck("VIEW", item, e.target.checked)}></FormCheck>
+                                                return <FormCheck key={key} defaultChecked={item.permissions} onChange={(e) => handleCheck("READ", item, e.target.checked)}></FormCheck>
                                             })
                                         }
                                     </div>
@@ -148,7 +208,7 @@ const UserPermission = () => {
                                             })
                                         }
                                     </div>
-                                </div>
+                                </div> */}
                             </Col>
                         </Row>
                     </CardBody>
