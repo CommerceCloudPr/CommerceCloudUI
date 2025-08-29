@@ -60,23 +60,45 @@ const UserPermission = () => {
     }, [])
 
 
-    const handleCheck = (item, action) => {
-        console.log("geldi")
+    const handleCheck = (value, action) => {
         const userPermissionObj = {
             'permissionsUUID': `${action.uuid}`,
             'userUUID': `${selectedUser}`,
             'allow': true
         }
-        fetch(`http://api-dev.aykutcandan.com/user/user-permission/add`,
-            {
-                headers: {
-                    'Authorization': `Bearer ${decodeURIComponent(session)}`,
-                    'Content-Type': 'application/json'
-                },
-                method: 'POST',
-                body: JSON.stringify(userPermissionObj)
-            }
-        )
+        if (value === true) {
+            fetch(`http://api-dev.aykutcandan.com/user/user-permission/add`,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${decodeURIComponent(session)}`,
+                        'Content-Type': 'application/json'
+                    },
+                    method: 'POST',
+                    body: JSON.stringify(userPermissionObj)
+                }
+            )
+                .then((res) => res.json())
+                .then((res) => {
+                    console.log(res.data)
+                    getUserPermissionList(selectedUser)
+                })
+        } else {
+            fetch(`http://api-dev.aykutcandan.com/user/user-permission/delete/${action.uuid}`,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${decodeURIComponent(session)}`,
+                        'Content-Type': 'application/json'
+                    },
+                    method: 'DELETE',
+                }
+            )
+                .then((res) => res.json())
+                .then((res) => {
+                    console.log(res.data)
+                    getUserPermissionList(selectedUser)
+                })
+        }
+
 
     }
 
@@ -156,9 +178,8 @@ const UserPermission = () => {
                                                             onChange={(e) => {
                                                                 console.log(item)
                                                                 console.log(action)
-                                                                handleCheck(item, action)
+                                                                handleCheck(e.target.checked, action)
                                                             }}
-                                                            //defaultChecked={userPermissionList.includes(action.uuid)}
                                                             checked={userPermissionList.includes(action.uuid)}
                                                         />
                                                     </td>
