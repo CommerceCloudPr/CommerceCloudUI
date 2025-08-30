@@ -81,20 +81,32 @@ const UserRole = () => {
                     getUserPermissionList(selectedRole)
                 })
         } else {
-            fetch(`http://api-dev.aykutcandan.com/user/role-permission/delete/${action.uuid}`,
+            fetch(`http://api-dev.aykutcandan.com/user/role-permission/get/permissionUUID/${action.uuid}`,
                 {
                     headers: {
                         'Authorization': `Bearer ${decodeURIComponent(session)}`,
                         'Content-Type': 'application/json'
                     },
-                    method: 'DELETE',
+                    method: 'GET'
                 }
             )
                 .then((res) => res.json())
                 .then((res) => {
-                    console.log(res.data)
-                    getUserPermissionList(selectedRole)
+                    fetch(`http://api-dev.aykutcandan.com/user/role-permission/delete/${res.data[0].uuid}`,
+                        {
+                            headers: {
+                                'Authorization': `Bearer ${decodeURIComponent(session)}`,
+                                'Content-Type': 'application/json'
+                            },
+                            method: 'DELETE',
+                        }
+                    )
+                        .then((res) => res.json())
+                        .then((res) => {
+                            getUserPermissionList(selectedRole)
+                        })
                 })
+
         }
 
 

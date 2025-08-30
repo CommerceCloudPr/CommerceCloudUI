@@ -11,7 +11,7 @@ const UserPermission = () => {
     const [users, setUsers] = useState([])
     const [selectedUser, setSelectedUser] = useState("")
     const [userPermissionList, setUserPermissionList] = useState([])
-
+    const [deleteId, setDeleteId] = useState("");
     useEffect(() => {
         fetch('http://api-dev.aykutcandan.com/user/module/get-all',
             {
@@ -83,20 +83,34 @@ const UserPermission = () => {
                     getUserPermissionList(selectedUser)
                 })
         } else {
-            fetch(`http://api-dev.aykutcandan.com/user/user-permission/delete/${action.uuid}`,
+            fetch(`http://api-dev.aykutcandan.com/user/user-permission/get/permissionUUID/${action.uuid}`,
                 {
                     headers: {
                         'Authorization': `Bearer ${decodeURIComponent(session)}`,
                         'Content-Type': 'application/json'
                     },
-                    method: 'DELETE',
+                    method: 'GET'
                 }
             )
                 .then((res) => res.json())
                 .then((res) => {
-                    console.log(res.data)
-                    getUserPermissionList(selectedUser)
+                    fetch(`http://api-dev.aykutcandan.com/user/user-permission/delete/${res.data[0].uuid}`,
+                        {
+                            headers: {
+                                'Authorization': `Bearer ${decodeURIComponent(session)}`,
+                                'Content-Type': 'application/json'
+                            },
+                            method: 'DELETE',
+                        }
+                    )
+                        .then((res) => res.json())
+                        .then((res) => {
+                            console.log(res.data)
+                            getUserPermissionList(selectedUser)
+                        })
                 })
+                .catch((err) => console.log(err))
+
         }
 
 
