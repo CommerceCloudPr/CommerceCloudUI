@@ -164,18 +164,25 @@ export const MENU_ITEMS = [{
   key: 'user',
   label: 'User',
   icon: 'solar:bill-list-bold-duotone',
-  children: [{
-    key: 'user-role',
-    label: 'Role',
-    url: '/user/role',
-    parentKey: 'user'
-  },
-  {
-    key: 'user-permission',
-    label: 'Permission',
-    url: '/user/permission',
-    parentKey: 'user'
-  }]
+  children: [
+    {
+      key: 'user-list',
+      label: 'List',
+      url: '/user/list',
+      parentKey: 'user'
+    },
+    {
+      key: 'user-role',
+      label: 'Role',
+      url: '/user/role',
+      parentKey: 'user'
+    },
+    {
+      key: 'user-permission',
+      label: 'Permission',
+      url: '/user/permission',
+      parentKey: 'user'
+    }]
 },
 {
   key: 'settings',
