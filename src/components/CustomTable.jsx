@@ -11,7 +11,7 @@ const CustomTable = (props) => {
                 <tr>
                     {
                         props.columns?.map((item, key) => {
-                            return <th scope="col">{item?.label}</th>
+                            return <th key={key} scope="col">{item?.label}</th>
                         })
                     }
                 </tr>

@@ -164,7 +164,7 @@ const UserPermission = () => {
                                         }}>
                                             {
                                                 users.map((item, key) => {
-                                                    return <option value={item.uuid}>{item.username}</option>
+                                                    return <option key={key} value={item.uuid}>{item.username}</option>
                                                 })
                                             }
                                         </FormSelect>

@@ -159,7 +159,7 @@ const UserRole = () => {
                                         }}>
                                             {
                                                 roles.map((item, key) => {
-                                                    return <option value={item.uuid}>{item.name}</option>
+                                                    return <option key={key} value={item.uuid}>{item.name}</option>
                                                 })
                                             }
                                         </FormSelect>
