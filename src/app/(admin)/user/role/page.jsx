@@ -1,7 +1,7 @@
 'use client'
 import PageTItle from '@/components/PageTItle';
 import { useEffect, useState } from 'react';
-import { Button, Card, CardBody, CardFooter, CardHeader, CardTitle, Col, FormCheck, FormSelect, Row } from 'react-bootstrap';
+import { Button, Card, CardBody, CardFooter, CardHeader, CardTitle, Col, FormCheck, FormSelect, Row, Spinner } from 'react-bootstrap';
 
 const UserRole = () => {
     const session = localStorage.getItem('session_token');
@@ -10,7 +10,8 @@ const UserRole = () => {
     const [name, setName] = useState('')
     const [selectedRole, setSelectedRole] = useState("")
     const [userPermissionList, setUserPermissionList] = useState([])
-
+    const [modelLoading, setModelLoading] = useState(false);
+    const [roleLoading, setRoleLoading] = useState(false);
     useEffect(() => {
         fetch('http://api-dev.aykutcandan.com/user/module/get-all',
             {
@@ -37,7 +38,7 @@ const UserRole = () => {
                     });
                 }
                 setModules(sortPermissionsByAction(res.data))
-
+                setModelLoading(true);
             })
             .catch((err) => console.log(err))
 
@@ -54,6 +55,7 @@ const UserRole = () => {
                 setRoles(res.data)
                 setSelectedRole(res.data[0]?.uuid)
                 getUserPermissionList(res.data[0]?.uuid)
+                setRoleLoading(true);
             })
             .catch((err) => console.log(err))
     }, [])
@@ -135,7 +137,7 @@ const UserRole = () => {
             .catch((err) => console.log(err))
     }
 
-    return <>
+    return (roleLoading === false || modelLoading === false) ? <Spinner /> : <>
         <PageTItle title="USER PERMISSION" />
         <Row>
             <Col lg={12}>

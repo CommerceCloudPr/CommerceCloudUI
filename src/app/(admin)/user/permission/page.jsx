@@ -1,7 +1,7 @@
 'use client'
 import PageTItle from '@/components/PageTItle';
 import { useEffect, useState } from 'react';
-import { Button, Card, CardBody, CardFooter, CardHeader, CardTitle, Col, FormCheck, FormSelect, Row } from 'react-bootstrap';
+import { Button, Card, CardBody, CardFooter, CardHeader, CardTitle, Col, FormCheck, FormSelect, Row, Spinner } from 'react-bootstrap';
 
 const UserPermission = () => {
     const session = localStorage.getItem('session_token');
@@ -12,6 +12,8 @@ const UserPermission = () => {
     const [selectedUser, setSelectedUser] = useState("")
     const [userPermissionList, setUserPermissionList] = useState([])
     const [deleteId, setDeleteId] = useState("");
+    const [modelLoading, setModelLoading] = useState(false);
+    const [userLoading, setUserLoading] = useState(false);
     useEffect(() => {
         fetch('http://api-dev.aykutcandan.com/user/module/get-all',
             {
@@ -38,7 +40,7 @@ const UserPermission = () => {
                     });
                 }
                 setModules(sortPermissionsByAction(res.data))
-
+                setModelLoading(true)
             })
             .catch((err) => console.log(err))
 
@@ -55,6 +57,7 @@ const UserPermission = () => {
                 setUsers(res.data)
                 setSelectedUser(res.data[0]?.uuid)
                 getUserPermissionList(res.data[0]?.uuid)
+                setUserLoading(true);
             })
             .catch((err) => console.log(err))
     }, [])
@@ -139,7 +142,7 @@ const UserPermission = () => {
             .catch((err) => console.log(err))
     }
 
-    return <>
+    return (userLoading === false || modelLoading === false) ? <Spinner /> : <>
         <PageTItle title="USER PERMISSION" />
         <Row>
             <Col lg={12}>
