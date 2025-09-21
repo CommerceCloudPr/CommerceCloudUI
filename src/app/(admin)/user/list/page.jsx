@@ -6,11 +6,26 @@ import { useRouter } from 'next/navigation';
 import UserFilter from '../components/UserFilter';
 import IconifyIcon from '@/components/wrappers/IconifyIcon';
 import PageTItle from '@/components/PageTItle';
+import { toast } from 'react-toastify'
+import 'react-toastify/dist/ReactToastify.css';
+import {Spinner} from 'react-bootstrap';
+const toastify = ({
+    props,
+    message
+}) => {
+    toast(message, {
+        ...props,
+        hideProgressBar: true,
+        theme: 'colored',
+        icon: false
+    });
+};
 
 const UserList = () => {
     const session = localStorage.getItem('session_token');
     const [data, setData] = useState([])
     const [showFilter, setShowFilter] = useState(false)
+    const [loading, setLoading] = useState(false);
     const router = useRouter()
     const columns = [
         {
@@ -49,6 +64,14 @@ const UserList = () => {
 
         },
         {
+            label: '',
+            value: 'info',
+            type: 'edit',
+            onClick: (row, col) => {
+                console.log(row, col)
+            }
+        },
+        {
             label: 'Status',
             value: 'status',
             type: 'toggle',
@@ -67,11 +90,35 @@ const UserList = () => {
             }
         )
             .then((res) => res.json())
-            .then((res) => setData(res.data))
-            .catch((err) => console.log(err))
+            .then((res) => {
+                setData(res.data);
+                setLoading(true);
+                if (res.statusCode !== 200) {
+                    toastify({
+                        message: res.message,
+                        props: {
+                            type: 'error',
+                            position: 'top-right',
+                            closeButton: false,
+                            autoClose: 3000
+                        }
+                    })
+                }
+            })
+            .catch((err) => {
+                toastify({
+                    message: err?.message,
+                    props: {
+                        type: 'error',
+                        position: 'top-right',
+                        closeButton: false,
+                        autoClose: 3000
+                    }
+                })
+            })
     }, [])
 
-    return <>
+    return loading === false ? <Spinner /> : <>
         <PageTItle title="USER LIST" />
         <div className='d-flex flex-column gap-5 justify-content-start'>
             <div className='d-flex justify-content-end w-100 gap-2'>
