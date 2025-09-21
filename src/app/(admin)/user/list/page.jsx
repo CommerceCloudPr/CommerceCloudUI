@@ -3,10 +3,14 @@ import { useEffect, useState } from 'react';
 import CustomTable from '../../../../components/CustomTable'
 import { Button } from 'react-bootstrap';
 import { useRouter } from 'next/navigation';
+import UserFilter from '../components/UserFilter';
+import IconifyIcon from '@/components/wrappers/IconifyIcon';
+import PageTItle from '@/components/PageTItle';
 
 const UserList = () => {
     const session = localStorage.getItem('session_token');
     const [data, setData] = useState([])
+    const [showFilter, setShowFilter] = useState(false)
     const router = useRouter()
     const columns = [
         {
@@ -67,16 +71,38 @@ const UserList = () => {
             .catch((err) => console.log(err))
     }, [])
 
-    return <div className='d-flex flex-column gap-5 justify-content-start'>
-        <div className='d-flex justify-content-end w-100'>
-            <Button variant="primary" size="sm" className="d-flex justify-content-end" onClick={() => router.push('/user/create')}>Create</Button>
-
+    return <>
+        <PageTItle title="USER LIST" />
+        <div className='d-flex flex-column gap-5 justify-content-start'>
+            <div className='d-flex justify-content-end w-100 gap-2'>
+                <Button 
+                    variant="outline-secondary" 
+                    size="sm" 
+                    onClick={() => setShowFilter(true)}
+                >
+                    <IconifyIcon icon="bx:filter-alt" className="me-1" />
+                    Filters
+                </Button>
+                <Button 
+                    variant="primary" 
+                    size="sm" 
+                    onClick={() => router.push('/user/create')}
+                >
+                    <IconifyIcon icon="bx:plus" className="me-1" />
+                    Create
+                </Button>
+            </div>
+            <CustomTable
+                data={data}
+                columns={columns}
+            />
         </div>
-        <CustomTable
-            data={data}
-            columns={columns}
+        
+        <UserFilter 
+            show={showFilter} 
+            onHide={() => setShowFilter(false)} 
         />
-    </div>
+    </>
 
 
 }
