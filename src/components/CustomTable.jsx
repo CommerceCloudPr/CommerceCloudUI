@@ -1,34 +1,131 @@
 'use client'
 import clsx from "clsx"
-import { Button, FormCheck, Table } from "react-bootstrap"
+import { Button, FormCheck, Table, Badge } from "react-bootstrap"
+import IconifyIcon from "./wrappers/IconifyIcon"
+import { useState, useMemo } from "react"
 
 const CustomTable = (props) => {
+    const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' })
 
+    const sortedData = useMemo(() => {
+        if (!sortConfig.key) return props.data
 
-    return <div>
-        <Table hover align="center">
+        return [...props.data].sort((a, b) => {
+            const aValue = a[sortConfig.key]
+            const bValue = b[sortConfig.key]
+
+            if (aValue == null && bValue == null) return 0
+            if (aValue == null) return 1
+            if (bValue == null) return -1
+
+            let comparison = 0
+            
+            const aDate = new Date(aValue)
+            const bDate = new Date(bValue)
+            const isADate = !isNaN(aDate.getTime()) && typeof aValue === 'string' && aValue.includes('-')
+            const isBDate = !isNaN(bDate.getTime()) && typeof bValue === 'string' && bValue.includes('-')
+            
+            if (isADate && isBDate) {
+                comparison = aDate.getTime() - bDate.getTime()
+            }
+            else if (!isNaN(aValue) && !isNaN(bValue)) {
+                comparison = Number(aValue) - Number(bValue)
+            }
+            else {
+                comparison = String(aValue).toLowerCase().localeCompare(String(bValue).toLowerCase())
+            }
+
+            return sortConfig.direction === 'desc' ? -comparison : comparison
+        })
+    }, [props.data, sortConfig])
+
+    const handleSort = (columnKey) => {
+        let direction = 'asc'
+        if (sortConfig.key === columnKey && sortConfig.direction === 'asc') {
+            direction = 'desc'
+        }
+        setSortConfig({ key: columnKey, direction })
+    }
+
+    const getSortIcon = (columnKey) => {
+        if (sortConfig.key !== columnKey) {
+            return <IconifyIcon icon="bx:sort" className="ms-1 text-muted" />
+        }
+        return sortConfig.direction === 'asc' 
+            ? <IconifyIcon icon="bx:sort-up" className="ms-1 text-primary" />
+            : <IconifyIcon icon="bx:sort-down" className="ms-1 text-primary" />
+    }
+
+    return <div className="table-responsive">
+        <Table hover className="table-centered table-striped">
             <thead className="table-light">
                 <tr>
                     {
-                        props.columns?.map((item, key) => {
-                            return <th key={key} scope="col">{item?.label}</th>
+                        props.columns.map((item, key) => {
+                            const isSortable = item.sortable !== false // Default to sortable unless explicitly disabled
+                            return (
+                                <th 
+                                    key={key}
+                                    scope="col" 
+                                    className={isSortable ? "cursor-pointer user-select-none" : ""}
+                                    onClick={isSortable ? () => handleSort(item.value) : undefined}
+                                    style={isSortable ? { cursor: 'pointer' } : {}}
+                                >
+                                    <div className="d-flex align-items-center">
+                                        {item.label}
+                                        {isSortable && getSortIcon(item.value)}
+                                    </div>
+                                </th>
+                            )
                         })
                     }
                 </tr>
             </thead>
             <tbody>
-                {props.data?.map((row, idx) => (
-                    <tr key={row?.uuid || idx}>
-                        {props.columns?.map((col, cIdx) => {
+                {sortedData.map((row, idx) => (
+                    <tr key={row.uuid || idx}>
+                        {props.columns.map((col, cIdx) => {
                             if (col.type === 'toggle') {
-                                return <td><FormCheck type="switch" onChange={() => col.onClick(row, col)} id="switch4" checked={row[col?.value] === 'ACTIVE' ? true : false} /></td>
-
-                            } else if (col.type === 'edit') {
-                                return <td onClick={() => col.onClick(row, col)}>
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="#ff6600" fill-rule="evenodd" d="M3.25 22a.75.75 0 0 1 .75-.75h16a.75.75 0 0 1 0 1.5H4a.75.75 0 0 1-.75-.75" clip-rule="evenodd" /><path fill="#ff6600" d="m11.52 14.929l5.917-5.917a8.2 8.2 0 0 1-2.661-1.787a8.2 8.2 0 0 1-1.788-2.662L7.07 10.48c-.462.462-.693.692-.891.947a5.2 5.2 0 0 0-.599.969c-.139.291-.242.601-.449 1.22l-1.088 3.267a.848.848 0 0 0 1.073 1.073l3.266-1.088c.62-.207.93-.31 1.221-.45q.518-.246.969-.598c.255-.199.485-.43.947-.891m7.56-7.559a3.146 3.146 0 0 0-4.45-4.449l-.71.71l.031.09c.26.749.751 1.732 1.674 2.655A7 7 0 0 0 18.37 8.08z" /></svg>
+                                return <td key={cIdx}><FormCheck type="switch" onChange={() => col.onClick(row, col)} id={`switch-${idx}-${cIdx}`} checked={row[col.value] === 'ACTIVE' ? true : false} /></td>
+                            } else if (col.type === 'badge') {
+                                const roleStyles = {
+                                    'Admin': { bg: 'success', text: 'text-success' },
+                                    'Editor': { bg: 'info', text: 'text-info' }, 
+                                    'Viewer': { bg: 'secondary', text: 'text-secondary' }
+                                }
+                                const style = roleStyles[row[col.value]] || { bg: 'secondary', text: 'text-secondary' }
+                                return <td key={cIdx}>
+                                    <span className={`badge badge-soft-${style.bg} rounded-pill ${style.text} fw-semibold`}>
+                                        {row[col.value]}
+                                    </span>
+                                </td>
+                            } else if (col.type === 'permissions') {
+                                const emailPermission = row.emailPermission !== false ? 'Evet' : 'Hayır'
+                                const smsPermission = row.smsPermission !== false ? 'Evet' : 'Hayır'
+                                
+                                return <td key={cIdx}>
+                                    <div className="d-flex align-items-center gap-1">
+                                        <Badge bg={emailPermission === 'Evet' ? 'success' : 'danger'} className="me-1">
+                                            {emailPermission}
+                                        </Badge>
+                                        <span>/</span>
+                                        <Badge bg={smsPermission === 'Evet' ? 'success' : 'danger'} className="ms-1">
+                                            {smsPermission}
+                                        </Badge>
+                                    </div>
+                                </td>
+                            } else if (col.type === 'actions') {
+                                return <td key={cIdx}>
+                                    <Button 
+                                        variant="outline-warning" 
+                                        size="sm"
+                                        onClick={() => col.onClick(row, col)}
+                                    >
+                                        <IconifyIcon icon="bx:edit" />
+                                    </Button>
                                 </td>
                             } else {
-                                return <td key={cIdx}>{row[col?.value]}</td>
+                                return <td key={cIdx}>{row[col.value]}</td>
                             }
                         }
                         )}

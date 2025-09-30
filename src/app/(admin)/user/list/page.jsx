@@ -23,7 +23,7 @@ const toastify = ({
 
 const UserList = () => {
     const session = localStorage.getItem('session_token');
-    const [data, setData] = useState([])
+    const [data, setData] = useState([]);
     const [showFilter, setShowFilter] = useState(false)
     const [loading, setLoading] = useState(false);
     const router = useRouter();
@@ -52,6 +52,12 @@ const UserList = () => {
 
         },
         {
+            label: 'Role',
+            value: 'role',
+            type: 'badge'
+
+        },
+        {
             label: 'Create Date',
             value: 'createdAt',
             type: 'text'
@@ -64,58 +70,33 @@ const UserList = () => {
 
         },
         {
-            label: '',
-            value: 'info',
-            type: 'edit',
-            onClick: (row, col) => {
-                router.push(`/user/create?uuid=${row?.uuid}` )
-            }
+            label: 'E-Posta / SMS',
+            value: 'permissions',
+            type: 'permissions',
+            sortable: false
+
         },
         {
             label: 'Status',
             value: 'status',
             type: 'toggle',
+            sortable: false,
             onClick: (row, col) => {
                 console.log(row, col)
+            }
+        },
+        {
+            label: 'Actions',
+            value: 'actions',
+            type: 'actions',
+            sortable: false,
+            onClick: (row, col) => {
+                router.push(`/user/edit/${row.uuid}`)
             }
         }
     ]
     useEffect(() => {
-        fetch('http://api-dev.aykutcandan.com/user/info/get-all',
-            {
-                method: "GET",
-                headers: {
-                    'Authorization': `Bearer ${decodeURIComponent(session)}`
-                }
-            }
-        )
-            .then((res) => res.json())
-            .then((res) => {
-                setData(res.data);
-                setLoading(true);
-                if (res.statusCode !== 200) {
-                    toastify({
-                        message: res.message,
-                        props: {
-                            type: 'error',
-                            position: 'top-right',
-                            closeButton: false,
-                            autoClose: 3000
-                        }
-                    })
-                }
-            })
-            .catch((err) => {
-                toastify({
-                    message: err?.message,
-                    props: {
-                        type: 'error',
-                        position: 'top-right',
-                        closeButton: false,
-                        autoClose: 3000
-                    }
-                })
-            })
+        setLoading(true);
     }, [])
 
 
@@ -151,8 +132,6 @@ const UserList = () => {
             onHide={() => setShowFilter(false)}
         />
     </>
-
-
 }
 
 export default UserList;
