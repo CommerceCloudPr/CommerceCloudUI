@@ -45,6 +45,10 @@ const CustomTable = (props) => {
             direction = 'desc'
         }
         setSortConfig({ key: columnKey, direction })
+        
+        if (props.onSort) {
+            props.onSort(columnKey, direction.toUpperCase())
+        }
     }
 
     const getSortIcon = (columnKey) => {
