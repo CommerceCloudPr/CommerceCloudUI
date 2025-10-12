@@ -37,7 +37,7 @@ const UserRole = () => {
                         };
                     });
                 }
-                setModules(sortPermissionsByAction(res.data))
+                setModules(sortPermissionsByAction(res.data.content))
                 setModelLoading(true);
             })
             .catch((err) => console.log(err))
@@ -52,9 +52,9 @@ const UserRole = () => {
         )
             .then((res) => res.json())
             .then((res) => {
-                setRoles(res.data)
-                setSelectedRole(res.data[0]?.uuid)
-                getUserPermissionList(res.data[0]?.uuid)
+                setRoles(res.data.content)
+                setSelectedRole(res.data.content[0]?.uuid)
+                getUserPermissionList(res.data.content[0]?.uuid)
                 setRoleLoading(true);
             })
             .catch((err) => console.log(err))

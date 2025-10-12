@@ -1,7 +1,5 @@
 'use client'
-import { useForm } from "react-hook-form";
-import TextAreaFormInput from "../../../../components/form/TextAreaFormInput"
-import { Button, Col, Container, FormCheck, FormControl, FormSelect, Row, Spinner } from "react-bootstrap"
+import { Button, Col, Container, FormCheck, FormControl, FormSelect, Nav, NavItem, NavLink, Row, Spinner, TabContainer } from "react-bootstrap"
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "react-toastify";
@@ -22,8 +20,10 @@ const UserCreate = () => {
     const params = useSearchParams()
     const session = localStorage.getItem('session_token');
     const [userId, setUserId] = useState(params.get('uuid'))
-
-    console.log(userId)
+    const [selectedTab, setSelectedTab] = useState("1");
+    const [countryList, setCountryList] = useState([]);
+    const [countryData, setCountryData] = useState([])
+    const [cityList, setCityList] = useState([]);
     const [loadingUser, setLoadingUser] = useState(false);
     const [user, setUser] = useState({
         firstName: '',
@@ -35,15 +35,48 @@ const UserCreate = () => {
         smsPermission: true,
         phoneNumber: '',
         birthDate: '',
-        gender: '',
+        gender: 'MALE',
         bio: '',
-        status: true
+        status: true,
+        addressLine1: "",
+        addressLine2: "",
+        city: "",
+        state: "",
+        postalCode: "",
+        country: "",
+        addressType: "",
+        default: true,
+        addressPhone: "",
+        billing: true,
+        identityNumber: "",
+        company: "",
+        taxNumber: "",
+        taxOffice: ""
     })
 
-    useEffect(()=>{
-        console.log(userId,"changed")
-    },[userId])
     useEffect(() => {
+
+        fetch('https://countriesnow.space/api/v0.1/countries',
+            {
+                method: 'GET',
+
+            }
+        )
+            .then((res) => res.json())
+            .then(async (res) => {
+                let temp = []
+                res.data?.map((item) => {
+                    temp.push({
+                        label: item.country,
+                        value: item.country,
+                        cities: item.cities
+                    })
+                })
+                setCountryList(temp);
+                setCountryData(res.data);
+            })
+            .catch((err) => console.log(err))
+
         if (userId !== null) {
             fetch('http://api-dev.aykutcandan.com/user/info/get/' + userId,
                 {
@@ -55,7 +88,15 @@ const UserCreate = () => {
             )
                 .then((res) => res.json())
                 .then((res) => {
-                    console.log(res.data)
+                    toastify({
+                        message: res?.message,
+                        props: {
+                            type: res?.success === true ? 'success' : 'error',
+                            position: 'top-right',
+                            closeButton: false,
+                            autoClose: 3000
+                        }
+                    })
                     setUser({
                         ...user,
                         firstName: res.data.firstName,
@@ -67,7 +108,7 @@ const UserCreate = () => {
                         status: res.data.enabled,
                     })
                     setLoadingUser(true)
-                    fetch('http://api-dev.aykutcandan.com/user/detail/username/' + res.data.username,
+                    fetch('http://api-dev.aykutcandan.com/user/detail/get/username/' + res.data.username,
                         {
                             method: "GET",
                             headers: {
@@ -77,7 +118,15 @@ const UserCreate = () => {
                     )
                         .then((res1) => res1?.json())
                         .then((res1) => {
-                            console.log(res.data.uuid)
+                            toastify({
+                                message: res1?.message,
+                                props: {
+                                    type: res1?.success === true ? 'success' : 'error',
+                                    position: 'top-right',
+                                    closeButton: false,
+                                    autoClose: 3000
+                                }
+                            })
                             setUserId(res1.data.uuid)
                             setUser({
                                 ...user,
@@ -89,7 +138,14 @@ const UserCreate = () => {
 
                         })
 
-
+                    fetch('http://api-dev.aykutcandan.com/user/detail/get/  username/' + res.data.username,
+                        {
+                            method: "GET",
+                            headers: {
+                                'Authorization': `Bearer ${decodeURIComponent(session)}`
+                            }
+                        }
+                    )
 
                 })
         } else {
@@ -117,7 +173,17 @@ const UserCreate = () => {
                 }
             )
                 .then((res) => res.json())
-                .then((res) => console.log(res.data))
+                .then((res) => {
+                    toastify({
+                        message: res?.message,
+                        props: {
+                            type: res?.success === true ? 'success' : 'error',
+                            position: 'top-right',
+                            closeButton: false,
+                            autoClose: 3000
+                        }
+                    })
+                })
                 .catch((err) => console.log(err))
         } else {
             const obj1 = {
@@ -143,9 +209,8 @@ const UserCreate = () => {
             )
                 .then((res) => res.json())
                 .then((res) => {
-                    if (res.status === 200) {
 
-                    }
+
                     const dataObj = {
                         'phoneNumber': user.phoneNumber,
                         'birthDate': user.birthDate,
@@ -164,14 +229,36 @@ const UserCreate = () => {
                         }
                     )
                         .then((res1) => res1.json())
-                        .then((res1) => console.log(res1.data))
+                        .then((res1) => {
+                            toastify({
+                                message: res1?.message,
+                                props: {
+                                    type: res1?.success === true ? 'success' : 'error',
+                                    position: 'top-right',
+                                    closeButton: false,
+                                    autoClose: 3000
+                                }
+                            })
+                        })
                         .catch((err) => console.log(err))
+
+                
                 })
                 .catch((err) => console.log(err))
 
 
         }
 
+    }
+
+    const handleSelectCountry = (selectedCountry) => {
+        let temp = [];
+        countryData.map((item) => {
+            if (item.country === selectedCountry) {
+                temp = item?.cities
+            }
+        })
+        setCityList(temp);
     }
 
     return <>
@@ -181,87 +268,199 @@ const UserCreate = () => {
                     <div className='d-flex justify-content-end w-100'>
                         <Button variant="primary" size="sm" className="d-flex justify-content-end" onClick={() => handleSaveUser()}>Save</Button>
                     </div>
-                    <Row>
-                        <Col xl={5}>
-                            <div className="d-flex flex-column justify-content-start gap-4">
-                                <div className="d-flex flex-column justify-content-start gap-1">
-                                    <label className="fs-6">First Name</label>
-                                    <FormControl onChange={(e) => {
-                                        setUser({ ...user, firstName: e.target.value })
-                                    }} defaultValue={user.firstName} type="text" size="sm"></FormControl>
+                    {
+                        selectedTab === "1" ? <Row className="p-4">
+
+                            <Col xl={5}>
+                                <div className="d-flex flex-column justify-content-start gap-4">
+                                    <div className="d-flex flex-column justify-content-start gap-1">
+                                        <label className="fs-6">First Name</label>
+                                        <FormControl onChange={(e) => {
+                                            setUser({ ...user, firstName: e.target.value })
+                                        }} defaultValue={user.firstName} type="text" size="sm"></FormControl>
+                                    </div>
+                                    <div className="d-flex flex-column justify-content-start gap-1">
+                                        <label className="fs-6">Last Name</label>
+                                        <FormControl onChange={(e) => {
+                                            setUser({ ...user, lastName: e.target.value })
+                                        }} defaultValue={user.lastName} type="text" size="sm"></FormControl>
+                                    </div>
+                                    <div className="d-flex flex-column justify-content-start gap-1">
+                                        <label className="fs-6">Username</label>
+                                        <FormControl onChange={(e) => setUser({ ...user, username: e.target.value })} defaultValue={user.username} type="text" size="sm"></FormControl>
+                                    </div>
+                                    <div className="d-flex flex-column justify-content-start gap-1">
+                                        <label className="fs-6">Email Address</label>
+                                        <FormControl onChange={(e) => setUser({ ...user, email: e.target.value })} defaultValue={user.email} type="text" size="sm"></FormControl>
+                                    </div>
+                                    <div className="d-flex flex-column justify-content-start gap-1">
+                                        <label className="fs-6">Password</label>
+                                        <FormControl onChange={(e) => {
+                                            setUser({ ...user, password: e.target.value })
+                                        }} defaultValue={user.password} type="password" size="sm"></FormControl>
+                                    </div>
+                                    <div className="d-flex flex-column justify-content-start gap-1">
+                                        <label className="fs-6">Phone Number</label>
+                                        <FormControl onChange={(e) => {
+                                            setUser({ ...user, phoneNumber: e.target.value })
+                                        }} defaultValue={user.phoneNumber} type="text" size="sm"></FormControl>
+                                    </div>
                                 </div>
-                                <div className="d-flex flex-column justify-content-start gap-1">
-                                    <label className="fs-6">Last Name</label>
-                                    <FormControl onChange={(e) => {
-                                        setUser({ ...user, lastName: e.target.value })
-                                    }} defaultValue={user.lastName} type="text" size="sm"></FormControl>
+                            </Col>
+                            <Col xl={5}>
+                                <div className="d-flex flex-column justify-content-start gap-4">
+                                    <div className="d-flex flex-column justify-content-start gap-1">
+                                        <label className="fs-6">Birthday Date</label>
+                                        <FormControl defaultValue={user.birthDate} onChange={(e) => {
+                                            setUser({ ...user, birthDate: e.target.value })
+                                        }} type="date" size="sm"></FormControl>
+                                    </div>
+                                    <div className="d-flex flex-column justify-content-start gap-1">
+                                        <label className="fs-6">Gender</label>
+                                        <FormSelect defaultValue={user.gender} onChange={(e) => {
+                                            console.log(e.target.value)
+                                            setUser({ ...user, gender: e.target.value })
+                                        }}>
+                                            <option value='MALE'>Male</option>
+                                            <option value='FEMALE'>Female</option>
+                                            <option value='none'>None</option>
+                                        </FormSelect>
+                                    </div>
+                                    <div className="d-flex flex-column justify-content-start gap-1">
+                                        <label className="fs-6">Bio</label>
+                                        <FormControl onChange={(e) => {
+                                            setUser({ ...user, bio: e.target.value })
+                                        }} defaultValue={user.bio} as={"textarea"} />
+                                    </div>
+                                    <div className="d-flex flex-column justify-content-start gap-1">
+                                        <label className="fs-6">Status</label>
+                                        <FormCheck defaultChecked={user.status} onChange={(e) => setUser({ ...user, status: e.target.checked })} type="switch"></FormCheck>
+                                    </div>
+                                    <div className="d-flex flex-column justify-content-start gap-1">
+                                        <label className="fs-6">Email Permission</label>
+                                        <FormCheck onChange={(e) => {
+                                            setUser({ ...user, emailPermission: e.target.checked })
+                                        }} defaultChecked={user.emailPermission} type="switch"></FormCheck>
+                                    </div>
+                                    <div className="d-flex flex-column justify-content-start gap-1">
+                                        <label className="fs-6">Sms Permission</label>
+                                        <FormCheck onChange={(e) => {
+                                            setUser({ ...user, smsPermission: e.target.checked })
+                                        }} defaultChecked={user.smsPermission} type="switch"></FormCheck>
+                                    </div>
                                 </div>
-                                <div className="d-flex flex-column justify-content-start gap-1">
-                                    <label className="fs-6">Username</label>
-                                    <FormControl onChange={(e) => setUser({ ...user, username: e.target.value })} defaultValue={user.username} type="text" size="sm"></FormControl>
+                            </Col>
+                        </Row> : <Row className="p-4">
+                            <Col xl={5}>
+                                <div className="d-flex flex-column justify-content-start gap-4">
+                                    <div className="d-flex flex-column justify-content-start gap-1">
+                                        <label className="fs-6">Address Line 1</label>
+                                        <FormControl as={"textarea"} defaultValue={user.addressLine1} onChange={(e) => {
+                                            setUser({ ...user, addressLine1: e.target.value })
+                                        }} size="sm"></FormControl>
+                                    </div>
+                                    <div className="d-flex flex-column justify-content-start gap-1">
+                                        <label className="fs-6">Address Line 2</label>
+                                        <FormControl as={"textarea"} defaultValue={user.addressLine2} onChange={(e) => {
+                                            setUser({ ...user, addressLine2: e.target.value })
+                                        }} size="sm"></FormControl>
+
+                                    </div>
+                                    <div className="d-flex flex-column justify-content-start gap-1">
+                                        <label className="fs-6">Country</label>
+                                        <FormSelect defaultValue={user.country} onChange={(e) => {
+                                            console.log(e.target.value)
+                                            setUser({ ...user, country: e.target.value })
+                                            handleSelectCountry(e.target.value);
+                                        }}>
+                                            {countryList?.map((item, key) => {
+                                                return <option key={key} value={item.value}>{item.label}</option>
+                                            })}
+                                        </FormSelect>
+                                    </div>
+                                    <div className="d-flex flex-column justify-content-start gap-1">
+                                        <label className="fs-6">City</label>
+                                        <FormSelect defaultValue={user.city} onChange={(e) => {
+                                            console.log(e.target.value)
+                                            setUser({ ...user, city: e.target.value })
+                                            // handleSelectCountry(e);
+                                        }}>
+                                            {cityList?.map((item, key) => {
+                                                return <option key={key} value={item}>{item}</option>
+                                            })}
+                                        </FormSelect>
+                                    </div>
+                                    <div className="d-flex flex-column justify-content-start gap-1">
+                                        <label className="fs-6">State</label>
+                                        <FormControl defaultValue={user.state} onChange={(e) => {
+                                            setUser({ ...user, state: e.target.value })
+                                        }} size="sm"></FormControl>
+                                    </div>
+                                    <div className="d-flex flex-column justify-content-start gap-1">
+                                        <label className="fs-6">Postal Code</label>
+                                        <FormControl defaultValue={user.postalCode} onChange={(e) => {
+                                            setUser({ ...user, postalCode: e.target.value })
+                                        }} size="sm"></FormControl>
+                                    </div>
+
+                                    <div className="d-flex flex-column justify-content-start gap-1">
+                                        <label className="fs-6">Address Type</label>
+                                        <FormControl defaultValue={user.addressType} onChange={(e) => {
+                                            setUser({ ...user, addressType: e.target.value })
+                                        }} size="sm"></FormControl>
+                                    </div>
+
                                 </div>
-                                <div className="d-flex flex-column justify-content-start gap-1">
-                                    <label className="fs-6">Email Address</label>
-                                    <FormControl onChange={(e) => setUser({ ...user, email: e.target.value })} defaultValue={user.email} type="text" size="sm"></FormControl>
+                            </Col>
+                            <Col xl={5}>
+                                <div className="d-flex flex-column justify-content-start gap-4">
+                                    <div className="d-flex flex-column justify-content-start gap-1">
+                                        <label className="fs-6">Default</label>
+                                        <FormCheck onChange={(e) => {
+                                            setUser({ ...user, default: e.target.checked })
+                                        }} defaultChecked={user.default} type="switch"></FormCheck>
+                                    </div>
+                                    <div className="d-flex flex-column justify-content-start gap-1">
+                                        <label className="fs-6">Phone Number</label>
+                                        <FormControl defaultValue={user.addressPhone} onChange={(e) => {
+                                            setUser({ ...user, addressPhone: e.target.value })
+                                        }} size="sm"></FormControl>
+                                    </div>
+                                    <div className="d-flex flex-column justify-content-start gap-1">
+                                        <label className="fs-6">Billing</label>
+                                        <FormCheck onChange={(e) => {
+                                            setUser({ ...user, billing: e.target.checked })
+                                        }} defaultChecked={user.billing} type="switch"></FormCheck>
+                                    </div>
+                                    <div className="d-flex flex-column justify-content-start gap-1">
+                                        <label className="fs-6">Identity Number</label>
+                                        <FormControl defaultValue={user.identityNumber} onChange={(e) => {
+                                            setUser({ ...user, identityNumber: e.target.value })
+                                        }} size="sm"></FormControl>
+                                    </div>
+
+                                    <div className="d-flex flex-column justify-content-start gap-1">
+                                        <label className="fs-6">Company Name</label>
+                                        <FormControl defaultValue={user.company} onChange={(e) => {
+                                            setUser({ ...user, company: e.target.value })
+                                        }} size="sm"></FormControl>
+                                    </div>
+                                    <div className="d-flex flex-column justify-content-start gap-1">
+                                        <label className="fs-6">Tax Number</label>
+                                        <FormControl defaultValue={user.taxNumber} onChange={(e) => {
+                                            setUser({ ...user, taxNumber: e.target.value })
+                                        }} size="sm"></FormControl>
+                                    </div>
+                                    <div className="d-flex flex-column justify-content-start gap-1">
+                                        <label className="fs-6">Tax Office</label>
+                                        <FormControl defaultValue={user.taxOffice} onChange={(e) => {
+                                            setUser({ ...user, taxOffice: e.target.value })
+                                        }} size="sm"></FormControl>
+                                    </div>
                                 </div>
-                                <div className="d-flex flex-column justify-content-start gap-1">
-                                    <label className="fs-6">Password</label>
-                                    <FormControl onChange={(e) => {
-                                        setUser({ ...user, password: e.target.value })
-                                    }} defaultValue={user.password} type="password" size="sm"></FormControl>
-                                </div>
-                                <div className="d-flex flex-column justify-content-start gap-1">
-                                    <label className="fs-6">Phone Number</label>
-                                    <FormControl onChange={(e) => {
-                                        setUser({ ...user, phoneNumber: e.target.value })
-                                    }} defaultValue={user.phoneNumber} type="text" size="sm"></FormControl>
-                                </div>
-                            </div>
-                        </Col>
-                        <Col xl={5}>
-                            <div className="d-flex flex-column justify-content-start gap-4">
-                                <div className="d-flex flex-column justify-content-start gap-1">
-                                    <label className="fs-6">Birthday Date</label>
-                                    <FormControl defaultValue={user.birthDate} onChange={(e) => {
-                                        setUser({ ...user, birthDate: e.target.value })
-                                    }} type="date" size="sm"></FormControl>
-                                </div>
-                                <div className="d-flex flex-column justify-content-start gap-1">
-                                    <label className="fs-6">Gender</label>
-                                    <FormSelect defaultValue={user.gender} onChange={(e) => {
-                                        console.log(e.target.value)
-                                        setUser({ ...user, gender: e.target.value })
-                                    }}>
-                                        <option value='MALE'>Male</option>
-                                        <option value='FEMALE'>Female</option>
-                                        <option value='none'>None</option>
-                                    </FormSelect>
-                                </div>
-                                <div className="d-flex flex-column justify-content-start gap-1">
-                                    <label className="fs-6">Bio</label>
-                                    <FormControl onChange={(e) => {
-                                        setUser({ ...user, bio: e.target.value })
-                                    }} defaultValue={user.bio} as={"textarea"} />
-                                </div>
-                                <div className="d-flex flex-column justify-content-start gap-1">
-                                    <label className="fs-6">Status</label>
-                                    <FormCheck defaultChecked={user.status} onChange={(e) => setUser({ ...user, status: e.target.checked })} type="switch"></FormCheck>
-                                </div>
-                                <div className="d-flex flex-column justify-content-start gap-1">
-                                    <label className="fs-6">Email Permission</label>
-                                    <FormCheck onChange={(e) => {
-                                        setUser({ ...user, emailPermission: e.target.checked })
-                                    }} defaultChecked={user.emailPermission} type="switch"></FormCheck>
-                                </div>
-                                <div className="d-flex flex-column justify-content-start gap-1">
-                                    <label className="fs-6">Sms Permission</label>
-                                    <FormCheck onChange={(e) => {
-                                        setUser({ ...user, smsPermission: e.target.checked })
-                                    }} defaultChecked={user.smsPermission} type="switch"></FormCheck>
-                                </div>
-                            </div>
-                        </Col>
-                    </Row>
+                            </Col>
+                        </Row>
+                    }
                 </Container>
             </div>
         }

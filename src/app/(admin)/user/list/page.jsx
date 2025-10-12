@@ -103,7 +103,7 @@ const UserList = () => {
             type: 'actions',
             sortable: false,
             onClick: (row, col) => {
-                router.push(`/user/edit/${row.uuid}`)
+                router.push(`/user/create?uuid=${row.uuid}`)
             }
         }
     ]

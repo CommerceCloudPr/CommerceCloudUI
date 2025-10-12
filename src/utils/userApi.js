@@ -1,6 +1,6 @@
 'use client'
 
-const API_BASE_URL = 'http://api-dev.aykutcandan.com';
+const API_BASE_URL = 'https://api-dev.aykutcandan.com';
 
 /**
  * Get authorization headers with session token

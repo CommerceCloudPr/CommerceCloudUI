@@ -39,7 +39,7 @@ const UserPermission = () => {
                         };
                     });
                 }
-                setModules(sortPermissionsByAction(res.data))
+                setModules(sortPermissionsByAction(res.data.content))
                 setModelLoading(true)
             })
             .catch((err) => console.log(err))
@@ -54,9 +54,9 @@ const UserPermission = () => {
         )
             .then((res) => res.json())
             .then((res) => {
-                setUsers(res.data)
-                setSelectedUser(res.data[0]?.uuid)
-                getUserPermissionList(res.data[0]?.uuid)
+                setUsers(res.data.content)
+                setSelectedUser(res.data.content[0]?.uuid)
+                getUserPermissionList(res.data.content[0]?.uuid)
                 setUserLoading(true);
             })
             .catch((err) => console.log(err))

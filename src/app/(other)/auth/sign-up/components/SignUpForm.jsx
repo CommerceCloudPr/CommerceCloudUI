@@ -33,7 +33,8 @@ const SignUpForm = () => {
       "email": user.email,
       "password": user.password,
       "sms_permission": true,
-      "email_permission": true
+      "email_permission": true,
+      "agreement_accepted": true
     }
     fetch('http://api-dev.aykutcandan.com/user/info/register',
       {
