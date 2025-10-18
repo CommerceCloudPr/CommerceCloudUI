@@ -30,7 +30,7 @@ const ModulesPage = async () => {
     const session = (localStorage.getItem('session_token'))
     const [data, setData] = useState([])
     useEffect(() => {
-        fetch('http://api-dev.aykutcandan.com/user/module/get-all',
+        fetch('https://api-dev.aykutcandan.com/user/module/get-all',
             {
                 method: "GET",
                 headers: {

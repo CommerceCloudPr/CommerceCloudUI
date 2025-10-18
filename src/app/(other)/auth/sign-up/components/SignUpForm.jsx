@@ -36,7 +36,7 @@ const SignUpForm = () => {
       "email_permission": true,
       "agreement_accepted": true
     }
-    fetch('http://api-dev.aykutcandan.com/user/info/register',
+    fetch('https://api-dev.aykutcandan.com/user/info/register',
       {
         headers: {
           'Authorization': `Bearer ${decodeURIComponent(session)}`,

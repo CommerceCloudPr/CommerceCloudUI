@@ -32,7 +32,7 @@ const RoleAddPage = () => {
           </CardBody>
           <CardFooter className="border-top">
             <Button variant={'primary'} className='primary-ff6c2fc' color='#ff6c2fc' type="button" key={0} onClick={() => {
-              fetch('http://api-dev.aykutcandan.com/user/role/add',
+              fetch('https://api-dev.aykutcandan.com/user/role/add',
                 {
                   headers: {
                     'Authorization': `Bearer ${decodeURIComponent(session)}`,

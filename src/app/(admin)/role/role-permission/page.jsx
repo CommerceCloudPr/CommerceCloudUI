@@ -10,7 +10,7 @@ const RolePermission = () => {
     const [selectedRole, setSelectedRole] = useState("");
     // permission/add ve user/role-permission a istek atacaksın
     useEffect(() => {
-        fetch('http://api-dev.aykutcandan.com/user/module/get-all',
+        fetch('https://api-dev.aykutcandan.com/user/module/get-all',
             {
                 method: "GET",
                 headers: {
@@ -22,7 +22,7 @@ const RolePermission = () => {
             .then((res) => setModules(res.data))
             .catch((err) => console.log(err))
 
-        fetch('http://api-dev.aykutcandan.com/user/role/get-all',
+        fetch('https://api-dev.aykutcandan.com/user/role/get-all',
             {
                 method: "GET",
                 headers: {
@@ -40,7 +40,7 @@ const RolePermission = () => {
             'moduleUUID': `${permission?.uuid}`,
             'action': `${type}`
         }
-        fetch('http://api-dev.aykutcandan.com/user/permission/add',
+        fetch('https://api-dev.aykutcandan.com/user/permission/add',
             {
                 headers: {
                     'Authorization': `Bearer ${decodeURIComponent(session)}`,
@@ -57,7 +57,7 @@ const RolePermission = () => {
                     'roleUUID': `${selectedRole}`,
                     'allow': checked
                 }
-                fetch('http://api-dev.aykutcandan.com/user/role-permission/add',
+                fetch('https://api-dev.aykutcandan.com/user/role-permission/add',
                     {
                         headers: {
                             'Authorization': `Bearer ${decodeURIComponent(session)}`,

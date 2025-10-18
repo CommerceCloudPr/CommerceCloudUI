@@ -78,7 +78,7 @@ const UserCreate = () => {
             .catch((err) => console.log(err))
 
         if (userId !== null) {
-            fetch('http://api-dev.aykutcandan.com/user/info/get/' + userId,
+            fetch('https://api-dev.aykutcandan.com/user/info/get/' + userId,
                 {
                     method: "GET",
                     headers: {
@@ -108,7 +108,7 @@ const UserCreate = () => {
                         status: res.data.enabled,
                     })
                     setLoadingUser(true)
-                    fetch('http://api-dev.aykutcandan.com/user/detail/get/username/' + res.data.username,
+                    fetch('https://api-dev.aykutcandan.com/user/detail/get/username/' + res.data.username,
                         {
                             method: "GET",
                             headers: {
@@ -138,7 +138,7 @@ const UserCreate = () => {
 
                         })
 
-                    fetch('http://api-dev.aykutcandan.com/user/detail/get/  username/' + res.data.username,
+                    fetch('https://api-dev.aykutcandan.com/user/detail/get/username/' + res.data.username,
                         {
                             method: "GET",
                             headers: {
@@ -162,7 +162,7 @@ const UserCreate = () => {
                 'gender': user.gender,
                 'bio': user.bio,
             }
-            fetch('http://api-dev.aykutcandan.com/user/detail/update/' + userId,
+            fetch('https://api-dev.aykutcandan.com/user/detail/update/' + userId,
                 {
                     method: "PUT",
                     headers: {
@@ -197,7 +197,7 @@ const UserCreate = () => {
                 "agreement_accepted": true
             }
 
-            fetch('http://api-dev.aykutcandan.com/user/info/register',
+            fetch('https://api-dev.aykutcandan.com/user/info/register',
                 {
                     method: "POST",
                     headers: {
@@ -218,7 +218,7 @@ const UserCreate = () => {
                         'bio': user.bio,
                         'userUUID': res.data.uuid
                     }
-                    fetch('http://api-dev.aykutcandan.com/user/detail/add',
+                    fetch('https://api-dev.aykutcandan.com/user/detail/add',
                         {
                             method: "POST",
                             headers: {

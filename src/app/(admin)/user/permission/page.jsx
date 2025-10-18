@@ -15,7 +15,7 @@ const UserPermission = () => {
     const [modelLoading, setModelLoading] = useState(false);
     const [userLoading, setUserLoading] = useState(false);
     useEffect(() => {
-        fetch('http://api-dev.aykutcandan.com/user/module/get-all',
+        fetch('https://api-dev.aykutcandan.com/user/module/get-all',
             {
                 method: "GET",
                 headers: {
@@ -44,7 +44,7 @@ const UserPermission = () => {
             })
             .catch((err) => console.log(err))
 
-        fetch('http://api-dev.aykutcandan.com/user/info/get-all',
+        fetch('https://api-dev.aykutcandan.com/user/info/get-all',
             {
                 method: "GET",
                 headers: {
@@ -70,7 +70,7 @@ const UserPermission = () => {
             'allow': true
         }
         if (value === true) {
-            fetch(`http://api-dev.aykutcandan.com/user/user-permission/add`,
+            fetch(`https://api-dev.aykutcandan.com/user/user-permission/add`,
                 {
                     headers: {
                         'Authorization': `Bearer ${decodeURIComponent(session)}`,
@@ -86,7 +86,7 @@ const UserPermission = () => {
                     getUserPermissionList(selectedUser)
                 })
         } else {
-            fetch(`http://api-dev.aykutcandan.com/user/user-permission/get/permissionUUID/${action.uuid}`,
+            fetch(`https://api-dev.aykutcandan.com/user/user-permission/get/permissionUUID/${action.uuid}`,
                 {
                     headers: {
                         'Authorization': `Bearer ${decodeURIComponent(session)}`,
@@ -97,7 +97,7 @@ const UserPermission = () => {
             )
                 .then((res) => res.json())
                 .then((res) => {
-                    fetch(`http://api-dev.aykutcandan.com/user/user-permission/delete/${res.data[0].uuid}`,
+                    fetch(`https://api-dev.aykutcandan.com/user/user-permission/delete/${res.data[0].uuid}`,
                         {
                             headers: {
                                 'Authorization': `Bearer ${decodeURIComponent(session)}`,
@@ -121,7 +121,7 @@ const UserPermission = () => {
 
     const getUserPermissionList = (user) => {
         let x = [];
-        fetch(`http://api-dev.aykutcandan.com/user/user-permission/get/userUUID/${user}`,
+        fetch(`https://api-dev.aykutcandan.com/user/user-permission/get/userUUID/${user}`,
             {
                 headers: {
                     'Authorization': `Bearer ${decodeURIComponent(session)}`,

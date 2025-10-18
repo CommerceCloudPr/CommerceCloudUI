@@ -9,7 +9,7 @@ const ProfilePage = () => {
   const session1 = (localStorage.getItem('session_token'))
   async function getAllUsers() {
 
-    fetch('http://api-dev.aykutcandan.com/user/detail/get-all',
+    fetch('https://api-dev.aykutcandan.com/user/detail/get-all',
       {
         method: "GET",
         headers: {

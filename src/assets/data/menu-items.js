@@ -204,7 +204,13 @@ export const MENU_ITEMS = [{
   key: 'profile',
   label: 'Profile',
   icon: 'solar:chat-square-like-bold-duotone',
-  url: '/profile'
+  url: '/profile',
+  children : [{
+    key : 'address-list',
+    label : 'Address',
+    url : '/address',
+    parentKey : 'profile'
+  }]
 }, {
   key: 'role',
   label: 'Roles',

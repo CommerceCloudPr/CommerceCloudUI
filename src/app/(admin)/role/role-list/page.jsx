@@ -33,7 +33,7 @@ const RoleListPage = async () => {
   ]
 
   useEffect(() => {
-    fetch('http://api-dev.aykutcandan.com/user/user-role/get-all',
+    fetch('https://api-dev.aykutcandan.com/user/user-role/get-all',
       {
         method: "GET",
         headers: {

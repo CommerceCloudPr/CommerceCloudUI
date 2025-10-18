@@ -33,7 +33,7 @@ const PermissionsPage = () => {
   ]
 
   useEffect(() => {
-    fetch('http://api-dev.aykutcandan.com/user/permission/get-all',
+    fetch('https://api-dev.aykutcandan.com/user/permission/get-all',
       {
         method: "GET",
         headers: {

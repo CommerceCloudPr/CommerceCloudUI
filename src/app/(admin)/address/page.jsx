@@ -3,9 +3,14 @@
 import { useEffect, useState } from "react";
 import PageTItle from '@/components/PageTItle';
 import Table from "../../../components/table";
+import IconifyIcon from "@/components/wrappers/IconifyIcon";
+import { Button } from "react-bootstrap";
+import { useRouter } from "next/navigation";
+import CustomTable from "../../../components/CustomTable";
 
 const AddressPage = async () => {
     const [loading, setLoading] = useState(false);
+    const router = useRouter()
     const columns = [
         {
             label: 'Id',
@@ -50,12 +55,21 @@ const AddressPage = async () => {
         {
             label: 'Update Date',
             value: 'updatedAt'
+        },
+        {
+            label: 'Actions',
+            value: 'actions',
+            type: 'actions',
+            sortable: false,
+            onClick: (row, col) => {
+                router.push(`/address/create?uuid=${row.uuid}`)
+            }
         }
     ]
     const session = (localStorage.getItem('session_token'))
     const [data, setData] = useState([])
     useEffect(() => {
-        fetch('http://api-dev.aykutcandan.com/user/address/get-all',
+        fetch('https://api-dev.aykutcandan.com/user/address/get-all/me',
             {
                 method: "GET",
                 headers: {
@@ -75,9 +89,22 @@ const AddressPage = async () => {
 
 
     return <>
-        <PageTItle title="PERMISSIONS" />
+        <PageTItle title="ADDRESS LIST" />
         {
-            loading === true && <Table columns={columns} data={data} />
+            loading === true && <div className="d-flex flex-column gap-2">
+                <div className="d-flex justify-content-end">
+                    <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={() => router.push('/address/create')}
+                    >
+                        <IconifyIcon icon="bx:plus" className="me-1" />
+                        Create
+                    </Button>
+                </div>
+                <CustomTable columns={columns} data={data} />
+
+            </div>
         }
     </>
 
