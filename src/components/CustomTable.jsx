@@ -1,5 +1,4 @@
 'use client'
-import clsx from "clsx"
 import { Button, FormCheck, Table, Badge } from "react-bootstrap"
 import IconifyIcon from "./wrappers/IconifyIcon"
 import { useState, useMemo } from "react"

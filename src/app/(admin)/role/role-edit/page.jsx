@@ -1,7 +1,6 @@
 import ChoicesFormInput from '@/components/form/ChoicesFormInput';
 import PageTItle from '@/components/PageTItle';
 import Link from 'next/link';
-import React from 'react';
 import { Card, CardBody, CardFooter, CardHeader, CardTitle, Col, Row } from 'react-bootstrap';
 export const metadata = {
   title: 'Role Edit'

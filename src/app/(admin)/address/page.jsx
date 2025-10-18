@@ -2,7 +2,6 @@
 'use client'
 import { useEffect, useState } from "react";
 import PageTItle from '@/components/PageTItle';
-import Table from "../../../components/table";
 import IconifyIcon from "@/components/wrappers/IconifyIcon";
 import { Button } from "react-bootstrap";
 import { useRouter } from "next/navigation";
