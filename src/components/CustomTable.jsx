@@ -19,12 +19,12 @@ const CustomTable = (props) => {
             if (bValue == null) return -1
 
             let comparison = 0
-            
+
             const aDate = new Date(aValue)
             const bDate = new Date(bValue)
             const isADate = !isNaN(aDate.getTime()) && typeof aValue === 'string' && aValue.includes('-')
             const isBDate = !isNaN(bDate.getTime()) && typeof bValue === 'string' && bValue.includes('-')
-            
+
             if (isADate && isBDate) {
                 comparison = aDate.getTime() - bDate.getTime()
             }
@@ -45,7 +45,7 @@ const CustomTable = (props) => {
             direction = 'desc'
         }
         setSortConfig({ key: columnKey, direction })
-        
+
         if (props.onSort) {
             props.onSort(columnKey, direction.toUpperCase())
         }
@@ -55,7 +55,7 @@ const CustomTable = (props) => {
         if (sortConfig.key !== columnKey) {
             return <IconifyIcon icon="bx:sort" className="ms-1 text-muted" />
         }
-        return sortConfig.direction === 'asc' 
+        return sortConfig.direction === 'asc'
             ? <IconifyIcon icon="bx:sort-up" className="ms-1 text-primary" />
             : <IconifyIcon icon="bx:sort-down" className="ms-1 text-primary" />
     }
@@ -68,9 +68,9 @@ const CustomTable = (props) => {
                         props.columns.map((item, key) => {
                             const isSortable = item.sortable !== false // Default to sortable unless explicitly disabled
                             return (
-                                <th 
+                                <th
                                     key={key}
-                                    scope="col" 
+                                    scope="col"
                                     className={isSortable ? "cursor-pointer user-select-none" : ""}
                                     onClick={isSortable ? () => handleSort(item.value) : undefined}
                                     style={isSortable ? { cursor: 'pointer' } : {}}
@@ -94,7 +94,7 @@ const CustomTable = (props) => {
                             } else if (col.type === 'badge') {
                                 const roleStyles = {
                                     'Admin': { bg: 'success', text: 'text-success' },
-                                    'Editor': { bg: 'info', text: 'text-info' }, 
+                                    'Editor': { bg: 'info', text: 'text-info' },
                                     'Viewer': { bg: 'secondary', text: 'text-secondary' }
                                 }
                                 const style = roleStyles[row[col.value]] || { bg: 'secondary', text: 'text-secondary' }
@@ -106,7 +106,7 @@ const CustomTable = (props) => {
                             } else if (col.type === 'permissions') {
                                 const emailPermission = row.emailPermission !== false ? 'Evet' : 'Hayır'
                                 const smsPermission = row.smsPermission !== false ? 'Evet' : 'Hayır'
-                                
+
                                 return <td key={cIdx}>
                                     <div className="d-flex align-items-center gap-1">
                                         <Badge bg={emailPermission === 'Evet' ? 'success' : 'danger'} className="me-1">
@@ -120,15 +120,26 @@ const CustomTable = (props) => {
                                 </td>
                             } else if (col.type === 'actions') {
                                 return <td key={cIdx}>
-                                    <Button 
-                                        variant="outline-warning" 
+                                    <Button
+                                        variant="outline-warning"
                                         size="sm"
                                         onClick={() => col.onClick(row, col)}
                                     >
                                         <IconifyIcon icon="bx:edit" />
                                     </Button>
                                 </td>
-                            } else {
+                            } else if (col.type === 'delete') {
+                                return <td key={cIdx}>
+                                    <Button
+                                        variant="outline-danger"
+                                        size="sm"
+                                        onClick={() => col.onClick(row, col)}
+                                    >
+                                        <IconifyIcon icon="bx:trash" />
+                                    </Button>
+                                </td>
+                            }
+                            else {
                                 return <td key={cIdx}>{row[col.value]}</td>
                             }
                         }

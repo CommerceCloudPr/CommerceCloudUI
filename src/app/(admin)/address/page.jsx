@@ -7,6 +7,19 @@ import IconifyIcon from "@/components/wrappers/IconifyIcon";
 import { Button } from "react-bootstrap";
 import { useRouter } from "next/navigation";
 import CustomTable from "../../../components/CustomTable";
+import { toast } from "react-toastify";
+
+const toastify = ({
+    props,
+    message
+}) => {
+    toast(message, {
+        ...props,
+        hideProgressBar: true,
+        theme: 'colored',
+        icon: false
+    });
+};
 
 const AddressPage = async () => {
     const [loading, setLoading] = useState(false);
@@ -57,18 +70,54 @@ const AddressPage = async () => {
             value: 'updatedAt'
         },
         {
-            label: 'Actions',
+            label: '',
             value: 'actions',
             type: 'actions',
             sortable: false,
             onClick: (row, col) => {
                 router.push(`/address/create?uuid=${row.uuid}`)
             }
+        },
+        {
+            label: '',
+            value: 'delete',
+            type: 'delete',
+            sortable: false,
+            onClick: (row, col) => {
+                setLoading(false)
+                handleDeleteAddress(row.uuid)
+            }
         }
     ]
+
+    const handleDeleteAddress = (id) => {
+        fetch('https://api-dev.aykutcandan.com/user/address/delete/' + id, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${decodeURIComponent(session)}`
+            }
+        })
+            .then((res) => res.json())
+            .then((res) => {
+                toastify({
+                    message: res?.message,
+                    props: {
+                        type: res?.success === true ? 'success' : 'error',
+                        position: 'top-right',
+                        closeButton: false,
+                        autoClose: 3000
+                    }
+                })
+                setLoading(true)
+                getDataFromApi()
+            })
+            .catch((err) => console.log(err))
+    }
+
     const session = (localStorage.getItem('session_token'))
     const [data, setData] = useState([])
-    useEffect(() => {
+
+    const getDataFromApi = () => {
         fetch('https://api-dev.aykutcandan.com/user/address/get-all/me',
             {
                 method: "GET",
@@ -84,6 +133,10 @@ const AddressPage = async () => {
                 setLoading(true)
             })
             .catch((err) => console.log(err))
+    }
+
+    useEffect(() => {
+        getDataFromApi()
     }, [])
 
 
