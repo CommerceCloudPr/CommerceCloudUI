@@ -7,6 +7,7 @@ import { Button } from "react-bootstrap";
 import { useRouter } from "next/navigation";
 import CustomTable from "../../../components/CustomTable";
 import { toast } from "react-toastify";
+import ApiClient from "../../../utils/apiClient";
 
 const toastify = ({
     props,
@@ -89,49 +90,43 @@ const AddressPage = async () => {
         }
     ]
 
-    const handleDeleteAddress = (id) => {
-        fetch('https://api-dev.aykutcandan.com/user/address/delete/' + id, {
-            method: 'DELETE',
-            headers: {
-                'Authorization': `Bearer ${decodeURIComponent(session)}`
-            }
-        })
-            .then((res) => res.json())
-            .then((res) => {
-                toastify({
-                    message: res?.message,
-                    props: {
-                        type: res?.success === true ? 'success' : 'error',
-                        position: 'top-right',
-                        closeButton: false,
-                        autoClose: 3000
-                    }
-                })
-                setLoading(true)
-                getDataFromApi()
-            })
-            .catch((err) => console.log(err))
+    const handleDeleteAddress = async (id) => {
+        const response = await ApiClient(`https://api-dev.aykutcandan.com/user/address/delete/${id}`, 'DELETE')
+        if (response) {
+            setLoading(true)
+            getDataFromApi()
+        }
+        // fetch('https://api-dev.aykutcandan.com/user/address/delete/' + id, {
+        //     method: 'DELETE',
+        //     headers: {
+        //         'Authorization': `Bearer ${decodeURIComponent(session)}`
+        //     }
+        // })
+        //     .then((res) => res.json())
+        //     .then((res) => {
+        //         toastify({
+        //             message: res?.message,
+        //             props: {
+        //                 type: res?.success === true ? 'success' : 'error',
+        //                 position: 'top-right',
+        //                 closeButton: false,
+        //                 autoClose: 3000
+        //             }
+        //         })
+
+        //     })
+        //     .catch((err) => console.log(err))
     }
 
     const session = (localStorage.getItem('session_token'))
     const [data, setData] = useState([])
 
-    const getDataFromApi = () => {
-        fetch('https://api-dev.aykutcandan.com/user/address/get-all/me',
-            {
-                method: "GET",
-                headers: {
-                    'Authorization': `Bearer ${decodeURIComponent(session)}`
-                }
-            }
-        )
-            .then((res) => res.json())
-            .then((res) => {
-                console.log(res.data)
-                setData(res.data)
-                setLoading(true)
-            })
-            .catch((err) => console.log(err))
+    const getDataFromApi = async () => {
+        const response = await ApiClient('https://api-dev.aykutcandan.com/user/address/get-all/me', 'GET')
+        if (response) {
+            setData(response)
+            setLoading(true)
+        }
     }
 
     useEffect(() => {
