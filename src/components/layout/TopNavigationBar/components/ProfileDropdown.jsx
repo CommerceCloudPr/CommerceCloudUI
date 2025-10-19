@@ -5,8 +5,9 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Dropdown, DropdownHeader, DropdownItem, DropdownMenu, DropdownToggle } from 'react-bootstrap';
 import Cookies from "js-cookie";
+import { signOut } from "next-auth/react";
 const ProfileDropdown = () => {
-const session = localStorage.getItem('session_token');
+  const session = localStorage.getItem('session_token');
   const handleLogout = () => {
     fetch('https://api-dev.aykutcandan.com/user/logout',
       {
@@ -57,7 +58,13 @@ const session = localStorage.getItem('session_token');
       <div className="dropdown-divider my-1" />
       <DropdownItem as={Link} className=" text-danger" href="/auth/sign-in" onClick={() => {
         localStorage.clear();
-        document.cookie = ""
+        document.cookie.split(";").forEach((cookie) => {
+          const name = cookie.split("=")[0].trim();
+          document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/`;
+        });
+        signOut({
+          callbackUrl: "http://localhost:3000/auth/sign-in", // çıkıştan sonra yönlendirme
+        });
         Cookies.remove('next-auth.callback-url');
         Cookies.remove('next-auth.csrf-token');
         Cookies.remove('next-auth.session-token');
