@@ -6,6 +6,24 @@ import Link from 'next/link';
 import { Dropdown, DropdownHeader, DropdownItem, DropdownMenu, DropdownToggle } from 'react-bootstrap';
 import Cookies from "js-cookie";
 const ProfileDropdown = () => {
+const session = localStorage.getItem('session_token');
+  const handleLogout = () => {
+    fetch('https://api-dev.aykutcandan.com/user/logout',
+      {
+
+        method: "POST",
+        headers: {
+          'Authorization': `Bearer ${decodeURIComponent(session)}`,
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'
+      }
+    )
+      .then((res) => res.json())
+      .then((res) => console.log(res.data))
+      .catch((err) => console.log(err))
+  }
+
   return <Dropdown className="topbar-item">
     <DropdownToggle as={'a'} type="button" className="topbar-button content-none" id="page-header-user-dropdown " data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
       <span className="d-flex align-items-center">
@@ -39,9 +57,11 @@ const ProfileDropdown = () => {
       <div className="dropdown-divider my-1" />
       <DropdownItem as={Link} className=" text-danger" href="/auth/sign-in" onClick={() => {
         localStorage.clear();
+        document.cookie = ""
         Cookies.remove('next-auth.callback-url');
         Cookies.remove('next-auth.csrf-token');
         Cookies.remove('next-auth.session-token');
+        handleLogout()
       }}>
         <IconifyIcon icon="bx:log-out" className="fs-18 align-middle me-1" />
         <span className="align-middle">Logout</span>

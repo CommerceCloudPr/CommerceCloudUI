@@ -1,60 +1,183 @@
-import FileUpload from '@/components/FileUpload';
-import ChoicesFormInput from '@/components/form/ChoicesFormInput';
+'use client'
+import DropzoneFormInput from '@/components/form/DropzoneFormInput';
 import IconifyIcon from '@/components/wrappers/IconifyIcon';
-import Link from 'next/link';
-import React from 'react';
-import { Card, CardBody, CardHeader, CardTitle, Col, Row } from 'react-bootstrap';
+import React, {  useState } from 'react';
+import { Button, Card, CardBody, CardHeader, CardTitle, Col, FormCheck, Row } from 'react-bootstrap';
 const AddProduct = () => {
-  return <Col xl={9} lg={8}>
-      <FileUpload title="Add Product Photo" />
-      <Card>
-        <CardHeader>
-          <CardTitle as={'h4'}>Product Information</CardTitle>
-        </CardHeader>
-        <CardBody>
-          <Row>
-            <Col lg={6}>
-              <form>
-                <div className="mb-3">
-                  <label htmlFor="product-name" className="form-label">
-                    Product Name
-                  </label>
-                  <input type="text" id="product-name" className="form-control" placeholder="Items Name" />
-                </div>
-              </form>
-            </Col>
-            <Col lg={6}>
-              <form>
-                <label htmlFor="product-categories" className="form-label">
-                  Product Categories
+
+  const session = localStorage.getItem('session_token');
+
+  const [product, setProduct] = useState({
+    productName: "string",
+    productSku: "string",
+    originalPrice: 0,
+    sellPrice: 0,
+    productDescription: "string",
+    productShortDescription: "string",
+    totalStock: 1073741824,
+    productBarcode: "string",
+    productImageUrlList: [],
+    isActive: true,
+    isDeleted: false,
+    vatRate: 0.1
+  })
+
+  const handleSaveProduct = () => {
+    let temp = [];
+    product.productImageUrlList?.map((item) => {
+      temp.push(item?.preview)
+    })
+    const myObj = {
+      "productName": product.productName,
+      "productSku": product.productSku,
+      "originalPrice": Number(product.originalPrice),
+      "sellPrice": Number(product.sellPrice),
+      "productDescription": product.productDescription,
+      "productShortDescription": product.productShortDescription,
+      "totalStock": Number(product.totalStock),
+      "productBarcode": product.productBarcode,
+      "productImageUrlList": temp,
+      "isActive": product.isActive,
+      "isDeleted": product.isDeleted,
+      "vatRate": Number(product.vatRate)
+    }
+    fetch('https://api-dev.aykutcandan.com/product/add',
+      {
+
+        method: "POST",
+        headers: {
+          'Authorization': `Bearer ${decodeURIComponent(session)}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(myObj)
+
+      }
+    )
+      .then((res) => res.json())
+      .then((res) => console.log(res.data))
+      .catch((err) => console.log(err))
+  }
+
+
+  return <Col xl={12} lg={10}>
+    <div className="p-3 mb-3 rounded">
+      <Row className="justify-content-end g-2">
+        <Col lg={2}>
+          <Button
+            variant="primary"
+            size="md"
+            onClick={() => handleSaveProduct()}
+          >
+            Create
+          </Button>
+        </Col>
+      </Row>
+    </div>
+    <DropzoneFormInput iconProps={{
+      icon: 'bx:cloud-upload',
+      height: 48,
+      width: 48,
+      className: 'mb-4 text-primary'
+    }}
+      text="Drop your images here, or click to browse"
+      helpText={<span className="text-muted fs-13 ">(1600 x 1200 (4:3) recommended. PNG, JPG and GIF files are allowed )</span>}
+      showPreview
+      deleteData={(data) => {
+        const newFiles = [...product.productImageUrlList];
+        newFiles.splice(newFiles.indexOf(data), 1);
+        setProduct({
+          ...product,
+          productImageUrlList: newFiles
+        })
+        console.log(newFiles)
+      }}
+      onFileUpload={(e) => {
+        setProduct(prev => ({
+          ...prev,
+          productImageUrlList: e
+        }))
+
+      }}
+    />
+    <Card>
+      <CardHeader>
+        <CardTitle as={'h4'}>Product Information</CardTitle>
+      </CardHeader>
+      <CardBody>
+        <Row>
+          <Col lg={6}>
+            <form>
+              <div className="mb-3">
+                <label htmlFor="product-name" className="form-label">
+                  Product Name
                 </label>
-                <select className="form-control" id="product-categories" data-choices data-choices-groups data-placeholder="Select Categories" name="choices-single-groups">
-                  <option>Choose a categories</option>
-                  <option value="Fashion">Fashion</option>
-                  <option value="Electronics">Electronics</option>
-                  <option value="Footwear">Footwear</option>
-                  <option value="Sportswear">Sportswear</option>
-                  <option value="Watches">Watches</option>
-                  <option value="Furniture">Furniture</option>
-                  <option value="Appliances">Appliances</option>
-                  <option value="Headphones">Headphones</option>
-                  <option value="Other Accessories">Other Accessories</option>
-                </select>
-              </form>
-            </Col>
-          </Row>
-          <Row>
-            <Col lg={4}>
-              <form>
-                <div className="mb-3">
-                  <label htmlFor="product-brand" className="form-label">
-                    Brand
-                  </label>
-                  <input type="text" id="product-brand" className="form-control" placeholder="Brand Name" />
-                </div>
-              </form>
-            </Col>
-            <Col lg={4}>
+                <input type="text" id="product-name" className="form-control" placeholder="Items Name" defaultValue={product.productName} onChange={(e) => setProduct({ ...product, productName: e.target.value })} />
+              </div>
+            </form>
+          </Col>
+          <Col lg={4}>
+            <form>
+              <div className="mb-3">
+                <label htmlFor="product-brand" className="form-label">
+                  Barcode
+                </label>
+                <input type="text" id="product-brand" className="form-control" placeholder="Brand Name" defaultValue={product.productBarcode}  onChange={(e) => setProduct({ ...product, productBarcode: e.target.value })} />
+              </div>
+            </form>
+          </Col>
+          {/* <Col lg={6}>
+            <form>
+              <label htmlFor="product-categories" className="form-label">
+                Product Categories
+              </label>
+              <select className="form-control" id="product-categories" data-choices data-choices-groups data-placeholder="Select Categories" name="choices-single-groups">
+                <option>Choose a categories</option>
+                <option value="Fashion">Fashion</option>
+                <option value="Electronics">Electronics</option>
+                <option value="Footwear">Footwear</option>
+                <option value="Sportswear">Sportswear</option>
+                <option value="Watches">Watches</option>
+                <option value="Furniture">Furniture</option>
+                <option value="Appliances">Appliances</option>
+                <option value="Headphones">Headphones</option>
+                <option value="Other Accessories">Other Accessories</option>
+              </select>
+            </form>
+          </Col> */}
+        </Row>
+        <Row>
+
+          <Col lg={2}>
+            <form>
+              <div className="mb-3">
+                <label htmlFor="product-active" className="form-label">
+                  Active
+                </label>
+                <FormCheck type="switch" defaultChecked={product.isActive} onChange={(e) => setProduct({ ...product, isActive: e.target.checked })} ></FormCheck>
+              </div>
+            </form>
+          </Col>
+          <Col lg={2}>
+            <form>
+              <div className="mb-3">
+                <label htmlFor="product-deleted" className="form-label">
+                  Deleted
+                </label>
+                <FormCheck type="switch" defaultChecked={product.isDeleted}  onChange={(e) => setProduct({ ...product, isDeleted: e.target.checked })} ></FormCheck>
+              </div>
+            </form>
+          </Col>
+          <Col lg={4}>
+            <form>
+              <div className="mb-3">
+                <label htmlFor="product-id" className="form-label">
+                  Rate
+                </label>
+                <input type="number" id="product-id" className="form-control" defaultValue={product.vatRate} onChange={(e) => setProduct({ ...product, vatRate: e.target.value })} />
+              </div>
+            </form>
+          </Col>
+          {/* <Col lg={4}>
               <form>
                 <div className="mb-3">
                   <label htmlFor="product-weight" className="form-label">
@@ -76,9 +199,9 @@ const AddProduct = () => {
                   <option value="Other">Other</option>
                 </select>
               </form>
-            </Col>
-          </Row>
-          <Row className="mb-4">
+            </Col> */}
+        </Row>
+        {/* <Row className="mb-4">
             <Col lg={4}>
               <div className="mt-3">
                 <h5 className="text-dark fw-medium">Size :</h5>
@@ -181,116 +304,111 @@ const AddProduct = () => {
                 </div>
               </div>
             </Col>
-          </Row>
-          <Row>
-            <Col lg={12}>
-              <div className="mb-3">
-                <label htmlFor="description" className="form-label">
-                  Description
-                </label>
-                <textarea className="form-control bg-light-subtle" id="description" rows={7} placeholder="Short description about the product" defaultValue={''} />
-              </div>
-            </Col>
-          </Row>
-          <Row>
-            <Col lg={4}>
-              <form>
-                <div className="mb-3">
-                  <label htmlFor="product-id" className="form-label">
-                    Tag Number
-                  </label>
-                  <input type="number" id="product-id" className="form-control" placeholder="#******" />
-                </div>
-              </form>
-            </Col>
-            <Col lg={4}>
-              <form>
-                <div className="mb-3">
-                  <label htmlFor="product-stock" className="form-label">
-                    Stock
-                  </label>
-                  <input type="number" id="product-stock" className="form-control" placeholder="Quantity" />
-                </div>
-              </form>
-            </Col>
-            <Col lg={4}>
-              <label htmlFor="product-stock" className="form-label">
-                Tag
+          </Row> */}
+        <Row>
+          <Col lg={12}>
+            <div className="mb-3">
+              <label htmlFor="description" className="form-label">
+                Description
               </label>
-              <ChoicesFormInput defaultValue="Fashion" className="form-control" data-choices data-choices-removeitem options={{
-              removeItemButton: true
-            }}>
-                <option value="Fashion">Fashion</option>
-                <option value="Electronics">Electronics</option>
-                <option value="Watches">Watches</option>
-                <option value="Headphones">Headphones</option>
-              </ChoicesFormInput>
-            </Col>
-          </Row>
-        </CardBody>
-      </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle as={'h4'}>Pricing Details</CardTitle>
-        </CardHeader>
-        <CardBody>
-          <Row>
-            <Col lg={4}>
-              <form>
-                <label htmlFor="product-price" className="form-label">
-                  Price
-                </label>
-                <div className="input-group mb-3">
-                  <span className="input-group-text fs-20">
-                    <IconifyIcon icon="bx:dollar" />
-                  </span>
-                  <input type="number" id="product-price" className="form-control" defaultValue={'000'} />
-                </div>
-              </form>
-            </Col>
-            <Col lg={4}>
-              <form>
-                <label htmlFor="product-discount" className="form-label">
-                  Discount
-                </label>
-                <div className="input-group mb-3">
-                  <span className="input-group-text fs-20">
-                    <IconifyIcon icon="bxs:discount" />
-                  </span>
-                  <input type="number" id="product-discount" className="form-control" defaultValue={'000'} />
-                </div>
-              </form>
-            </Col>
-            <Col lg={4}>
-              <form>
-                <label htmlFor="product-tex" className="form-label">
-                  Tex
-                </label>
-                <div className="input-group mb-3">
-                  <span className="input-group-text fs-20">
-                    <IconifyIcon icon="bxs:file-txt" />
-                  </span>
-                  <input type="number" id="product-tex" className="form-control" placeholder="000" defaultValue={'000'} />
-                </div>
-              </form>
-            </Col>
-          </Row>
-        </CardBody>
-      </Card>
-      <div className="p-3 bg-light mb-3 rounded">
-        <Row className="justify-content-end g-2">
-          <Col lg={2}>
-            <Link href="" className="btn btn-outline-secondary w-100">
-              Create Product
-            </Link>
+              <textarea className="form-control bg-light-subtle" id="description" rows={7} placeholder="Description about the product" defaultValue={product.productDescription}  onChange={(e) => setProduct({ ...product, productDescription: e.target.value })} />
+            </div>
           </Col>
-          <Col lg={2}>
-            <Link href="" className="btn btn-primary w-100">
-              Cancel
-            </Link>
+          <Col lg={12}>
+            <div className="mb-3">
+              <label htmlFor="description" className="form-label">
+                Short Description
+              </label>
+              <textarea className="form-control bg-light-subtle" id="description" rows={4} placeholder="Short description about the product" defaultValue={product.productShortDescription} onChange={(e) => setProduct({ ...product, productShortDescription: e.target.value })} />
+            </div>
           </Col>
         </Row>
-      </div>
-    </Col>;
+        <Row>
+          <Col lg={4}>
+            <form>
+              <div className="mb-3">
+                <label htmlFor="product-id" className="form-label">
+                  Product Sku
+                </label>
+                <input type="string" id="product-id" className="form-control" defaultValue={product.productSku} onChange={(e) => setProduct({ ...product, productSku: e.target.value })} />
+              </div>
+            </form>
+          </Col>
+          <Col lg={4}>
+            <form>
+              <div className="mb-3">
+                <label htmlFor="product-stock" className="form-label">
+                  Stock
+                </label>
+                <input type="number" id="product-stock" className="form-control" placeholder="Quantity" defaultValue={product.totalStock} onChange={(e) => setProduct({ ...product, totalStock: e.target.value })}  />
+              </div>
+            </form>
+          </Col>
+          {/* <Col lg={4}>
+            <label htmlFor="product-stock" className="form-label">
+              Tag
+            </label>
+            <ChoicesFormInput defaultValue="Fashion" className="form-control" data-choices data-choices-removeitem options={{
+              removeItemButton: true
+            }}>
+              <option value="Fashion">Fashion</option>
+              <option value="Electronics">Electronics</option>
+              <option value="Watches">Watches</option>
+              <option value="Headphones">Headphones</option>
+            </ChoicesFormInput>
+          </Col> */}
+        </Row>
+      </CardBody>
+    </Card>
+    <Card>
+      <CardHeader>
+        <CardTitle as={'h4'}>Pricing Details</CardTitle>
+      </CardHeader>
+      <CardBody>
+        <Row>
+          <Col lg={4}>
+            <form>
+              <label htmlFor="product-price" className="form-label">
+                Original Price
+              </label>
+              <div className="input-group mb-3">
+                <span className="input-group-text fs-20">
+                  <IconifyIcon icon="bx:dollar" />
+                </span>
+                <input type="number" id="product-price" className="form-control" defaultValue={product.originalPrice} onChange={(e) => setProduct({ ...product, originalPrice: e.target.value })} />
+              </div>
+            </form>
+          </Col>
+          <Col lg={4}>
+            <form>
+              <label htmlFor="product-discount" className="form-label">
+                Sell Price
+              </label>
+              <div className="input-group mb-3">
+                <span className="input-group-text fs-20">
+                  <IconifyIcon icon="bxs:discount" />
+                </span>
+                <input type="number" id="product-discount" className="form-control" defaultValue={product.sellPrice} onChange={(e) => setProduct({ ...product, sellPrice: e.target.value })} />
+              </div>
+            </form>
+          </Col>
+          {/* <Col lg={4}>
+            <form>
+              <label htmlFor="product-tex" className="form-label">
+                Tex
+              </label>
+              <div className="input-group mb-3">
+                <span className="input-group-text fs-20">
+                  <IconifyIcon icon="bxs:file-txt" />
+                </span>
+                <input type="number" id="product-tex" className="form-control" placeholder="000" defaultValue={'000'} />
+              </div>
+            </form>
+          </Col> */}
+        </Row>
+      </CardBody>
+    </Card>
+
+  </Col>;
 };
 export default AddProduct;

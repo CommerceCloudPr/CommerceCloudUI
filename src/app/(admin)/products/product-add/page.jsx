@@ -10,7 +10,6 @@ const ProductAddPage = () => {
   return <>
       <PageTItle title="CREATE PRODUCT" />
       <Row>
-        <ProductDetails />
         <AddProduct />
       </Row>
     </>;
