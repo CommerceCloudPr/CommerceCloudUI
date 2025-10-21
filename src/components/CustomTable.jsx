@@ -214,13 +214,18 @@ const CustomTable = (props) => {
                                     </span>
                                 </td>
                             } else if (col.type === 'stock') {
+                                const total = row.stock?.total ?? row.stock?.left ?? 0;
                                 const stockLeft = row.stockLeft || 0;
                                 const stockSold = row.stockSold || 0;
                                 return <td key={cIdx}>
                                     <p className="mb-1 text-muted">
+                                        <span className="text-dark fw-medium">{total} Adet</span>
+                                    </p>
+                                    {/* henüz backend'de stockSold yok, bu yüzden kaldırıldı
+                                    <p className="mb-1 text-muted">
                                         <span className="text-dark fw-medium">{stockLeft} Item</span> Left
                                     </p>
-                                    <p className="mb-0 text-muted">{stockSold} Sold</p>
+                                    <p className="mb-0 text-muted">{stockSold} Sold</p> */}
                                 </td>
                             } else if (col.type === 'rating') {
                                 const rating = row.rating || { star: 0, review: 0 };

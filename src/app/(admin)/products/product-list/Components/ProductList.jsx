@@ -82,14 +82,19 @@ const ProductList = () => {
     title: p.name || p.sku || '—',
     image: Array.isArray(p.images) && p.images.length > 0 ? p.images[0] : '',
     size: '',
-    price: p.effectivePrice ?? p.sellPrice ?? p.originalPrice ?? 0,
+    price: p.effectivePriceIncVat ?? p.effectivePrice ?? p.sellPrice ?? p.originalPrice ?? 0,
+  
+    stockTotal: p.totalStock ?? 0,
+  
     stock: {
-      left: p.totalStock ?? 0,
-      sold: undefined, // backend'de yok; stok bileşeni sold'u opsiyonel kullanmalı
+      total: p.totalStock ?? 0,
+      left:  p.totalStock ?? 0,
+      sold:  undefined,
     },
-    category: '', // backend şemanda yok; varsa burada doldur
-    rating: { star: 0, review: 0 }, // şemada yok; rating bileşeni opsiyonel çalışmalı
-    raw: p, // ihtiyaç olursa orijinal ürün
+  
+    category: '',
+    rating: { star: 0, review: 0 },
+    raw: p,
   });
 
   const fetchProductsData = useCallback(async () => {
