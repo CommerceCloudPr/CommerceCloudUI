@@ -225,6 +225,8 @@ const UserList = () => {
                             data={data}
                             columns={columns}
                             onSort={handleSortChange}
+                            sortBy={sortConfig.sortBy}
+                            sortDirection={sortConfig.sortDirection}
                         />
                         
                         <Pagination
