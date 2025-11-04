@@ -1,36 +1,12 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Card, CardHeader, CardTitle, Col, Row } from "react-bootstrap";
 
 const CategoryList = () => {
-  const originalData = [
-    {
-      id: 1,
-      name: "Frontend Team",
-      children: [
-        { id: 11, name: "React Developer" },
-        { id: 12, name: "Next.js Developer" },
-      ],
-    },
-    {
-      id: 2,
-      name: "Backend Team",
-      children: [
-        { id: 21, name: "Node.js Developer" },
-        { id: 22, name: "Python Developer" },
-      ],
-    },
-    {
-      id: 3,
-      name: "Mobile Team",
-      children: [
-        { id: 31, name: "React Native Dev" },
-        { id: 32, name: "Flutter Dev" },
-      ],
-    },
-  ];
 
+  const [originalData, setOriginalData] = useState([])
+  const session = localStorage.getItem('session_token');
   const [open, setOpen] = useState({});
   const [sortField, setSortField] = useState("name");
   const [sortOrder, setSortOrder] = useState("asc");
@@ -50,88 +26,109 @@ const CategoryList = () => {
     }
   };
 
+  const rootCategories = useMemo(() => {
+    const seen = new Set(originalData.map(c => c.uuid));
+    // çocuk olup root'ta yer almayanları ele
+    originalData.forEach(cat => cat.childCategories?.forEach(child => seen.delete(child.uuid)));
+    return originalData.filter(cat => seen.has(cat.uuid));
+  }, [originalData]);
   // sorting + pagination logic
   const sortedData = useMemo(() => {
-    return [...originalData].sort((a, b) => {
+    return [...rootCategories].sort((a, b) => {
       const v1 = a[sortField].toLowerCase();
       const v2 = b[sortField].toLowerCase();
       if (v1 < v2) return sortOrder === "asc" ? -1 : 1;
       if (v1 > v2) return sortOrder === "asc" ? 1 : -1;
       return 0;
     });
-  }, [sortField, sortOrder]);
+  }, [sortField, sortOrder, rootCategories]);
 
   const paginatedData = useMemo(() => {
     const start = (page - 1) * pageSize;
     return sortedData.slice(start, start + pageSize);
   }, [sortedData, page]);
 
-  const totalPages = Math.ceil(originalData.length / pageSize);
+  const paginated = sortedData.slice((page - 1) * pageSize, page * pageSize);
+  const totalPages = Math.ceil(sortedData.length / pageSize);
+  const renderRow = (row, level = 0) => {
+    const hasChildren = row.childCategories?.length > 0;
 
-  
+    return (
+      <React.Fragment key={row.uuid}>
+        <tr>
+          <td className="p-3" style={{ paddingLeft: `${level * 20}px`, cursor: hasChildren ? "pointer" : "default" }}
+            onClick={() => hasChildren && toggle(row.uuid)}
+          >
+            {hasChildren ? (open[row.uuid] ? "▼" : "►") : ""} {row.name}
+          </td>
+          <td>{row.description}</td>
+        </tr>
+
+        {open[row.uuid] && row.childCategories?.map(child => renderRow(child, level + 1))}
+      </React.Fragment>
+    );
+  };
+  useEffect(() => {
+    fetch('https://api-dev.aykutcandan.com/product/category/get-all', {
+      headers: {
+        'Authorization': `Bearer ${decodeURIComponent(session)}`,
+      },
+    })
+      .then((res) => res.json())
+      .then((res) => {
+        setOriginalData(res.data.content)
+        /*  {
+        id: 1,
+        name: "Frontend Team",
+        children: [
+          { id: 11, name: "React Developer" },
+          { id: 12, name: "Next.js Developer" },
+        ],
+      },
+      */
+      })
+      .catch((err) => console.log(err))
+  }, [])
 
   return (
     <Row>
       <Col xl={12}>
         <Card>
           <CardHeader>
-            <CardTitle as={"h4"}>Category List</CardTitle>
+            <CardTitle as={"h4"}>Categories</CardTitle>
           </CardHeader>
 
           <table className="table table-bordered">
             <thead>
               <tr>
-                <th
-                  style={{ cursor: "pointer" }}
-                  onClick={() => toggleSort("name")}
-                >
-                  Team / Member{" "}
-                  {sortField === "name" && (sortOrder === "asc" ? "↑" : "↓")}
+                <th onClick={() => toggleSort("name")} style={{ cursor: "pointer" }}>
+                  Name {sortField === "name" && (sortOrder === "asc" ? "↑" : "↓")}
                 </th>
+                <th>Description</th>
               </tr>
             </thead>
-            <tbody>
-              {paginatedData.map((row) => (
-                <React.Fragment key={row.id}>
-                  <tr>
-                    <td onClick={() => toggle(row.id)} style={{ cursor: "pointer" }}>
-                      {open[row.id] ? "▼" : "►"} {row.name}
-                    </td>
-                  </tr>
-
-                  {open[row.id] &&
-                    row.children?.map((child) => (
-                      <tr key={child.id}>
-                        <td className="ps-4">— {child.name}</td>
-                      </tr>
-                    ))}
-                </React.Fragment>
-              ))}
-            </tbody>
-
+            <tbody>{paginated.map(cat => renderRow(cat))}</tbody>
           </table>
 
-          {/* Pagination */}
           <div className="d-flex justify-content-center gap-2 my-3">
             <button
               className="btn btn-sm btn-outline-primary"
-              onClick={() => setPage((p) => Math.max(p - 1, 1))}
               disabled={page === 1}
+              onClick={() => setPage(p => p - 1)}
             >
               Prev
             </button>
 
-            <span className="px-2 fw-bold">{page} / {totalPages}</span>
+            <span className="fw-bold px-2">{page} / {totalPages}</span>
 
             <button
               className="btn btn-sm btn-outline-primary"
-              onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
               disabled={page === totalPages}
+              onClick={() => setPage(p => p + 1)}
             >
               Next
             </button>
           </div>
-
         </Card>
       </Col>
     </Row>
