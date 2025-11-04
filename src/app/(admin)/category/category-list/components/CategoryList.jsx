@@ -1,126 +1,141 @@
-import IconifyIcon from '@/components/wrappers/IconifyIcon';
-import { getAllOrders } from '@/helpers/data';
-import Image from 'next/image';
-import Link from 'next/link';
-import React from 'react';
-import { Card, CardFooter, CardHeader, CardTitle, Col, Dropdown, DropdownItem, DropdownMenu, DropdownToggle, Row } from 'react-bootstrap';
-const CategoryList = async () => {
-  const categoryData = await getAllOrders();
-  return <Row>
+"use client";
+
+import React, { useState, useMemo } from "react";
+import { Card, CardHeader, CardTitle, Col, Row } from "react-bootstrap";
+
+const CategoryList = () => {
+  const originalData = [
+    {
+      id: 1,
+      name: "Frontend Team",
+      children: [
+        { id: 11, name: "React Developer" },
+        { id: 12, name: "Next.js Developer" },
+      ],
+    },
+    {
+      id: 2,
+      name: "Backend Team",
+      children: [
+        { id: 21, name: "Node.js Developer" },
+        { id: 22, name: "Python Developer" },
+      ],
+    },
+    {
+      id: 3,
+      name: "Mobile Team",
+      children: [
+        { id: 31, name: "React Native Dev" },
+        { id: 32, name: "Flutter Dev" },
+      ],
+    },
+  ];
+
+  const [open, setOpen] = useState({});
+  const [sortField, setSortField] = useState("name");
+  const [sortOrder, setSortOrder] = useState("asc");
+  const [page, setPage] = useState(1);
+  const pageSize = 2;
+
+  const toggle = (id) => {
+    setOpen((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const toggleSort = (field) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortOrder("asc");
+    }
+  };
+
+  // sorting + pagination logic
+  const sortedData = useMemo(() => {
+    return [...originalData].sort((a, b) => {
+      const v1 = a[sortField].toLowerCase();
+      const v2 = b[sortField].toLowerCase();
+      if (v1 < v2) return sortOrder === "asc" ? -1 : 1;
+      if (v1 > v2) return sortOrder === "asc" ? 1 : -1;
+      return 0;
+    });
+  }, [sortField, sortOrder]);
+
+  const paginatedData = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return sortedData.slice(start, start + pageSize);
+  }, [sortedData, page]);
+
+  const totalPages = Math.ceil(originalData.length / pageSize);
+
+  
+
+  return (
+    <Row>
       <Col xl={12}>
         <Card>
-          <CardHeader className="d-flex justify-content-between align-items-center gap-1">
-            <CardTitle as={'h4'} className="flex-grow-1">
-              All Categories List
-            </CardTitle>
-            <Link href="/products/product-add" className="btn btn-sm btn-primary">
-              Add Product
-            </Link>
-            <Dropdown>
-              <DropdownToggle className="btn btn-sm btn-outline-light content-none icons-center" data-bs-toggle="dropdown" aria-expanded="false">
-                This Month <IconifyIcon className="ms-1" width={16} height={16} icon="bx:chevron-down" />
-              </DropdownToggle>
-              <DropdownMenu className="dropdown-menu-end">
-                <DropdownItem>Download</DropdownItem>
-                <DropdownItem>Export</DropdownItem>
-                <DropdownItem>Import</DropdownItem>
-              </DropdownMenu>
-            </Dropdown>
+          <CardHeader>
+            <CardTitle as={"h4"}>Category List</CardTitle>
           </CardHeader>
-          <div>
-            <div className="table-responsive">
-              <table className="table align-middle mb-0 table-hover table-centered">
-                <thead className="bg-light-subtle">
+
+          <table className="table table-bordered">
+            <thead>
+              <tr>
+                <th
+                  style={{ cursor: "pointer" }}
+                  onClick={() => toggleSort("name")}
+                >
+                  Team / Member{" "}
+                  {sortField === "name" && (sortOrder === "asc" ? "↑" : "↓")}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {paginatedData.map((row) => (
+                <React.Fragment key={row.id}>
                   <tr>
-                    <th style={{
-                    width: 20
-                  }}>
-                      <div className="form-check">
-                        <input type="checkbox" className="form-check-input" id="customCheck1" />
-                        <label className="form-check-label" htmlFor="customCheck1" />
-                      </div>
-                    </th>
-                    <th>Categories</th>
-                    <th>Starting Price</th>
-                    <th>Create by</th>
-                    <th>ID</th>
-                    <th>Product Stock</th>
-                    <th>Action</th>
+                    <td onClick={() => toggle(row.id)} style={{ cursor: "pointer" }}>
+                      {open[row.id] ? "▼" : "►"} {row.name}
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {categoryData.map((item, idx) => <tr key={idx}>
-                      <td>
-                        <div className="form-check">
-                          <input type="checkbox" className="form-check-input" id="customCheck2" />
-                          <label className="form-check-label" htmlFor="customCheck2" />
-                        </div>
-                      </td>
-                      <td>
-                        <div className="d-flex align-items-center gap-2">
-                          <div className="rounded bg-light avatar-md d-flex align-items-center justify-content-center">
-                            {item.product?.image && <Image src={item.product.image} alt="product" className="avatar-md" />}
-                          </div>
-                          <p className="text-dark fw-medium fs-15 mb-0">{item.product?.title}</p>
-                        </div>
-                      </td>
-                      <td>
-                        ${item.product?.price} to ${item.maxPrice}
-                      </td>
-                      <td>{item.createBy}</td>
-                      <td>{item.orderId}</td>
-                      <td>{item.productStock}</td>
-                      <td>
-                        <div className="d-flex gap-2">
-                          <Link href="" className="btn btn-light btn-sm">
-                            <IconifyIcon icon="solar:eye-broken" className="align-middle fs-18" />
-                          </Link>
-                          <Link href="" className="btn btn-soft-primary btn-sm">
-                            <IconifyIcon icon="solar:pen-2-broken" className="align-middle fs-18" />
-                          </Link>
-                          <Link href="" className="btn btn-soft-danger btn-sm">
-                            <IconifyIcon icon="solar:trash-bin-minimalistic-2-broken" className="align-middle fs-18" />
-                          </Link>
-                        </div>
-                      </td>
-                    </tr>)}
-                </tbody>
-              </table>
-            </div>
+
+                  {open[row.id] &&
+                    row.children?.map((child) => (
+                      <tr key={child.id}>
+                        <td className="ps-4">— {child.name}</td>
+                      </tr>
+                    ))}
+                </React.Fragment>
+              ))}
+            </tbody>
+
+          </table>
+
+          {/* Pagination */}
+          <div className="d-flex justify-content-center gap-2 my-3">
+            <button
+              className="btn btn-sm btn-outline-primary"
+              onClick={() => setPage((p) => Math.max(p - 1, 1))}
+              disabled={page === 1}
+            >
+              Prev
+            </button>
+
+            <span className="px-2 fw-bold">{page} / {totalPages}</span>
+
+            <button
+              className="btn btn-sm btn-outline-primary"
+              onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
+              disabled={page === totalPages}
+            >
+              Next
+            </button>
           </div>
-          <CardFooter className="border-top">
-            <nav aria-label="Page navigation example">
-              <ul className="pagination justify-content-end mb-0">
-                <li className="page-item">
-                  <Link className="page-link" href="">
-                    Previous
-                  </Link>
-                </li>
-                <li className="page-item active">
-                  <Link className="page-link" href="">
-                    1
-                  </Link>
-                </li>
-                <li className="page-item">
-                  <Link className="page-link" href="">
-                    2
-                  </Link>
-                </li>
-                <li className="page-item">
-                  <Link className="page-link" href="">
-                    3
-                  </Link>
-                </li>
-                <li className="page-item">
-                  <Link className="page-link" href="">
-                    Next
-                  </Link>
-                </li>
-              </ul>
-            </nav>
-          </CardFooter>
+
         </Card>
       </Col>
-    </Row>;
+    </Row>
+  );
 };
+
 export default CategoryList;

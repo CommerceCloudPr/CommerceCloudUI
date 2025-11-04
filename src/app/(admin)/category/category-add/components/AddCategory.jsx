@@ -4,84 +4,24 @@ import ChoicesFormInput from '@/components/form/ChoicesFormInput';
 import TextAreaFormInput from '@/components/form/TextAreaFormInput';
 import TextFormInput from '@/components/form/TextFormInput';
 import { yupResolver } from '@hookform/resolvers/yup';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import * as yup from 'yup';
-import { Button, Card, CardBody, CardHeader, CardTitle, Col, Row } from 'react-bootstrap';
+import { Button, Card, CardBody, CardHeader, CardTitle, Col, FormSelect, Row } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 import Link from 'next/link';
-const GeneralInformationCard = ({
-  control
-}) => {
-  return <Card>
-      <CardHeader>
-        <CardTitle as={'h4'}>General Information</CardTitle>
-      </CardHeader>
-      <CardBody>
-        <Row>
-          <Col lg={6}>
-            <div className="mb-3">
-              <TextFormInput control={control} name="title" label="Category Title" placeholder="Enter Title" />
-            </div>
-          </Col>
-          <Col lg={6}>
-            <label htmlFor="crater" className="form-label">
-              Created By
-            </label>
-            <ChoicesFormInput className="form-control" id="crater" data-choices data-choices-groups data-placeholder="Select Crater">
-              <option defaultValue={''}>Select Crater</option>
-              <option value="Seller">Seller</option>
-              <option value="Admin">Admin</option>
-              <option value="Other">Other</option>
-            </ChoicesFormInput>
-          </Col>
-          <Col lg={6}>
-            <div className="mb-3">
-              <TextFormInput control={control} type="number" name="stock" label="Stock" placeholder="Enter Stock" />
-            </div>
-          </Col>
-          <Col lg={6}>
-            <div className="mb-3">
-              <TextFormInput control={control} type="text" name="tag" label="Tag ID" placeholder="#******" />
-            </div>
-          </Col>
-          <Col lg={12}>
-            <div className="mb-0">
-              <TextAreaFormInput control={control} type="text" name="description" label="Description" placeholder="Type description" />
-            </div>
-          </Col>
-        </Row>
-      </CardBody>
-    </Card>;
-};
-const MetaOptionsCard = ({
-  control
-}) => {
-  return <Card>
-      <CardHeader>
-        <CardTitle as={'h4'}>Meta Options</CardTitle>
-      </CardHeader>
-      <CardBody>
-        <Row>
-          <Col lg={6}>
-            <div className="mb-3">
-              <TextFormInput control={control} type="text" name="meta" label="Meta Title" placeholder="Enter Title" />
-            </div>
-          </Col>
-          <Col lg={6}>
-            <div className="mb-3">
-              <TextFormInput control={control} type="text" name="metaTag" label="Meta Tag Keyword" placeholder="Enter word" />
-            </div>
-          </Col>
-          <Col lg={12}>
-            <div className="mb-0">
-              <TextAreaFormInput rows={4} control={control} type="text" name="description2" label="Description" placeholder="Type description" />
-            </div>
-          </Col>
-        </Row>
-      </CardBody>
-    </Card>;
-};
+import { categoryData } from '../../category-list/data';
+
 const AddCategory = () => {
+
+  const session = localStorage.getItem('session_token');
+  const [category, setCategory] = useState({
+    name: null,
+    description: null,
+    parentUUID: null
+  })
+
+  const [categoryList, setCategoryList] = useState([]);
+
   const messageSchema = yup.object({
     title: yup.string().required('Please enter title'),
     stock: yup.string().required('Please enter stock'),
@@ -98,23 +38,103 @@ const AddCategory = () => {
   } = useForm({
     resolver: yupResolver(messageSchema)
   });
-  return <form onSubmit={handleSubmit(() => {})}>
-      <GeneralInformationCard control={control} />
-      <MetaOptionsCard control={control} />
-      <div className="p-3 bg-light mb-3 rounded">
-        <Row className="justify-content-end g-2">
-          <Col lg={2}>
-            <Button variant="outline-secondary" type="submit" className=" w-100">
-              Save Change
-            </Button>
+
+  const handleSaveCategory = () => {
+    const myObj = {
+      name: category.name,
+      description: category.description
+    };
+    if (category.parentUUID !== null) {
+      Object.assign(myObj, { parentUUID: category.parentUUID })
+    }
+
+    fetch('https://api-dev.aykutcandan.com/product/category/add',
+      {
+        method: "POST",
+        headers: {
+          'Authorization': `Bearer ${decodeURIComponent(session)}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(myObj)
+
+      })
+  }
+
+  useEffect(() => {
+    fetch('https://api-dev.aykutcandan.com/product/category/get-all',
+      {
+        method: "GET",
+        headers: {
+          'Authorization': `Bearer ${decodeURIComponent(session)}`,
+        },
+      }
+    )
+      .then((res) => res.json())
+      .then((res) => setCategoryList(res.data.content))
+      .catch((err) => console.log(err))
+  }, [])
+
+  return <form onSubmit={handleSubmit(() => {
+    handleSaveCategory()
+  })}>
+    <Card>
+      <CardHeader>
+        <div className="mb-3 rounded">
+          <Row className="justify-content-end g-2">
+            <Col lg={2}>
+              <Button variant="primary" type="submit" className=" w-100" onClick={handleSaveCategory}>
+                Save
+              </Button>
+            </Col>
+          </Row>
+        </div>
+      </CardHeader>
+      <CardBody>
+        <Row>
+          <Col lg={6}>
+            <form>
+              <div className="mb-3">
+                <label htmlFor="category-name" className="form-label">
+                  Category Name
+                </label>
+                <input type="text" id="category-name" className="form-control" placeholder="Enter Name" defaultValue={category.name} onChange={(e) => {
+                  setCategory({ ...category, name: e.target.value })
+                }} />
+              </div>
+            </form>
+
           </Col>
-          <Col lg={2}>
-            <Link href="" className="btn btn-primary w-100">
-              Cancel
-            </Link>
+          <Col lg={6}>
+            <form>
+              <div className="mb-3">
+                <label htmlFor="category-description" className="form-label">
+                  Category Description
+                </label>
+                <input type="text" id="category-description" className="form-control" placeholder="Enter Description" defaultValue={category.description} onChange={(e) => {
+                  setCategory({ ...category, description: e.target.value })
+                }} />
+              </div>
+            </form>
+          </Col>
+          <Col lg={6}>
+            <label htmlFor="crater" className="form-label">
+              Parent Category
+            </label>
+            <form >
+              <FormSelect onChange={(e) => setCategory({ ...category, parentUUID: e.target.value })}>
+                {
+                  categoryList?.map((item, key) => {
+                    return <option value={item?.uuid} key={key}>{item?.name}</option>
+                  })
+                }
+              </FormSelect>
+            </form>
           </Col>
         </Row>
-      </div>
-    </form>;
+      </CardBody>
+    </Card>
+
+
+  </form>;
 };
 export default AddCategory;

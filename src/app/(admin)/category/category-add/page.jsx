@@ -10,13 +10,10 @@ export const metadata = {
 const CategoryAddPage = () => {
   return <>
       <PageTItle title="CREATE CATEGORY" />
-      <Row>
-        <CategoryEditCard />
-        <Col xl={9} lg={8}>
-          <FileUpload title="Add Thumbnail Photo" />
+        <Col xl={12} lg={8}>
           <AddCategory />
         </Col>
-      </Row>
+    
     </>;
 };
 export default CategoryAddPage;

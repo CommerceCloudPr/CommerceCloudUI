@@ -8,9 +8,9 @@ const CustomTable = (props) => {
     const [localSortConfig, setLocalSortConfig] = useState({ key: null, direction: 'asc' })
 
     const isApiSorting = !!props.onSort
-    
+
     const sortConfig = useMemo(() => {
-        return isApiSorting 
+        return isApiSorting
             ? { key: props.sortBy, direction: props.sortDirection?.toLowerCase() || 'asc' }
             : localSortConfig
     }, [isApiSorting, props.sortBy, props.sortDirection, localSortConfig])
@@ -34,12 +34,12 @@ const CustomTable = (props) => {
                 if (bValue == null) return -1
 
                 let comparison = 0
-                
+
                 const aDate = new Date(aValue)
                 const bDate = new Date(bValue)
                 const isADate = !isNaN(aDate.getTime()) && typeof aValue === 'string' && aValue.includes('-')
                 const isBDate = !isNaN(bDate.getTime()) && typeof bValue === 'string' && bValue.includes('-')
-                
+
                 if (isADate && isBDate) {
                     comparison = aDate.getTime() - bDate.getTime()
                 }
@@ -70,7 +70,7 @@ const CustomTable = (props) => {
         if (sortConfig.key === columnKey && sortConfig.direction === 'asc') {
             direction = 'desc'
         }
-        
+
         if (isApiSorting) {
             // API sorting varsa callback'i çağır
             props.onSort(columnKey, direction.toUpperCase())
@@ -95,20 +95,20 @@ const CustomTable = (props) => {
                     {
                         props.columns.map((item, key) => {
                             const isSortable = item.sortable !== false // Default to sortable unless explicitly disabled
-                            
+
                             // Special handling for checkbox column
                             if (item.type === 'checkbox') {
                                 // Tüm veri için kontrol et (sadece mevcut sayfa değil)
                                 const totalDataLength = props.data ? props.data.length : 0;
                                 const allSelected = item.selectedItems && item.selectedItems.length === totalDataLength && totalDataLength > 0;
                                 const someSelected = item.selectedItems && item.selectedItems.length > 0;
-                                
+
                                 return (
-                                    <th key={key} scope="col" style={{width: 20}}>
+                                    <th key={key} scope="col" style={{ width: 20 }}>
                                         <div className="form-check ms-1">
-                                            <input 
-                                                type="checkbox" 
-                                                className="form-check-input" 
+                                            <input
+                                                type="checkbox"
+                                                className="form-check-input"
                                                 id="selectAll"
                                                 checked={allSelected}
                                                 ref={(input) => {
@@ -121,7 +121,7 @@ const CustomTable = (props) => {
                                     </th>
                                 );
                             }
-                            
+
                             return (
                                 <th
                                     key={key}
@@ -183,17 +183,27 @@ const CustomTable = (props) => {
                                         <IconifyIcon icon="bx:edit" />
                                     </Button>
                                 </td>
+                            } else if (col.type === 'type') {
+                                return <td key={cIdx}>
+                                    <Button
+                                        variant="outline-danger"
+                                        size="sm"
+                                        onClick={() => col.onClick(row, col)}
+                                    >
+                                        <IconifyIcon icon="bx:trash" />
+                                    </Button>
+                                </td>
                             } else if (col.type === 'product') {
                                 return <td key={cIdx}>
                                     <div className="d-flex align-items-center gap-2">
                                         <div className="rounded bg-light avatar-md d-flex align-items-center justify-content-center">
-                                            <Image 
-                                                src={row.image || '/placeholder-product.png'} 
-                                                alt="product" 
+                                            <Image
+                                                src={row.image || '/placeholder-product.png'}
+                                                alt="product"
                                                 width={40}
                                                 height={40}
-                                                className="avatar-md rounded" 
-                                                style={{objectFit: 'cover'}} 
+                                                className="avatar-md rounded"
+                                                style={{ objectFit: 'cover' }}
                                             />
                                         </div>
                                         <div>
@@ -252,11 +262,11 @@ const CustomTable = (props) => {
                                 </td>
                             } else if (col.type === 'checkbox') {
                                 const isChecked = col.selectedItems && col.selectedItems.includes(row.id || row.uuid);
-                                return <td key={cIdx} style={{width: 20}}>
+                                return <td key={cIdx} style={{ width: 20 }}>
                                     <div className="form-check ms-1">
-                                        <input 
-                                            type="checkbox" 
-                                            className="form-check-input" 
+                                        <input
+                                            type="checkbox"
+                                            className="form-check-input"
                                             id={`check-${row.id || row.uuid || idx}`}
                                             checked={isChecked}
                                             onChange={(e) => col.onChange && col.onChange(row, e.target.checked)}
