@@ -37,7 +37,8 @@ export const MENU_ITEMS = [{
     url: '/products/product-add',
     parentKey: 'products'
   }]
-}, {
+},
+ {
   key: 'category',
   icon: 'solar:clipboard-list-bold-duotone',
   label: 'Category',
@@ -57,7 +58,29 @@ export const MENU_ITEMS = [{
     url: '/category/category-add',
     parentKey: 'category'
   }]
-}, {
+}, 
+ {
+  key: 'brand',
+  icon: 'solar:clipboard-list-bold-duotone',
+  label: 'Brand',
+  children: [{
+    key: 'brand-list',
+    label: 'List',
+    url: '/brand/brand-list',
+    parentKey: 'brand'
+  }, {
+    key: 'brand-edit',
+    label: 'Edit',
+    url: '/brand/brand-edit',
+    parentKey: 'brand'
+  }, {
+    key: 'brand-add',
+    label: 'Create',
+    url: '/brand/brand-add',
+    parentKey: 'brand'
+  }]
+},
+{
   key: 'inventory',
   label: 'Inventory',
   icon: 'solar:box-bold-duotone',

@@ -43,7 +43,7 @@ const PermissionsPage = () => {
     )
       .then((res) => res.json())
       .then((res) => {
-        setData(res.data);
+        setData(res.data.content);
         setLoading(true);
       })
       .catch((err) => console.log(err))

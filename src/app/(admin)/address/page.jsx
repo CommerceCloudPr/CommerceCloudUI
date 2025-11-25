@@ -96,26 +96,7 @@ const AddressPage = async () => {
             setLoading(true)
             getDataFromApi()
         }
-        // fetch('https://api-dev.aykutcandan.com/user/address/delete/' + id, {
-        //     method: 'DELETE',
-        //     headers: {
-        //         'Authorization': `Bearer ${decodeURIComponent(session)}`
-        //     }
-        // })
-        //     .then((res) => res.json())
-        //     .then((res) => {
-        //         toastify({
-        //             message: res?.message,
-        //             props: {
-        //                 type: res?.success === true ? 'success' : 'error',
-        //                 position: 'top-right',
-        //                 closeButton: false,
-        //                 autoClose: 3000
-        //             }
-        //         })
 
-        //     })
-        //     .catch((err) => console.log(err))
     }
 
     const session = (localStorage.getItem('session_token'))

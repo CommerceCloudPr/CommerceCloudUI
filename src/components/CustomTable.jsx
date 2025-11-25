@@ -141,7 +141,7 @@ const CustomTable = (props) => {
                 </tr>
             </thead>
             <tbody>
-                {sortedAndPaginatedData.map((row, idx) => (
+                {sortedAndPaginatedData.length > 0 && sortedAndPaginatedData.map((row, idx) => (
                     <tr key={row.uuid || idx}>
                         {props.columns.map((col, cIdx) => {
                             if (col.type === 'toggle') {
