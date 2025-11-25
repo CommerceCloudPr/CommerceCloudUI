@@ -59,19 +59,47 @@ const STATUS_OPTIONS = [
   { label: 'Pasif', value: 'inactive' }, // isActive: false
 ];
 
+const SALES_UNIT_OPTIONS = [
+  { label: 'Satış Birimi Seçiniz', value: '' },
+  { label: 'Adet', value: 'PIECE' },
+  { label: 'Kilogram', value: 'KILOGRAM' },
+  { label: 'Litre', value: 'LITER' },
+  { label: 'Metre', value: 'METER' },
+  { label: 'Paket', value: 'PACKAGE' },
+  { label: 'Kutu', value: 'BOX' },
+  { label: 'Set', value: 'SET' },
+  { label: 'Çift', value: 'PAIR' },
+  { label: 'Takım', value: 'SUIT' },
+];
+
+const SHOW_PRODUCT_OPTIONS = [
+  { label: 'Tümü', value: '' },
+  { label: 'Gösterilen Ürünler', value: 'true' },
+  { label: 'Gösterilmeyen Ürünler', value: 'false' },
+];
+
+const FREE_SHIPPING_OPTIONS = [
+  { label: 'Tümü', value: '' },
+  { label: 'Ücretsiz Kargolu', value: 'true' },
+  { label: 'Ücretli Kargo', value: 'false' },
+];
+
 const defaultValues = {
   productName: '',
   category: '',
   minPrice: '',
   maxPrice: '',
   stockStatus: '',
-  minRating: '',
   createdFrom: '',
   createdTo: '',
   updatedFrom: '',
   updatedTo: '',
   productCode: '',
-  status: '', // UI: active/inactive -> API’ye isActive bool olarak dönüştürebilirsin.
+  status: '',
+  salesUnit: '',
+  showProduct: '',
+  freeShipping: '',
+  brandName: '',
 };
 
 const ProductFilter = ({ show, onHide, onFilter }) => {
@@ -104,7 +132,6 @@ const ProductFilter = ({ show, onHide, onFilter }) => {
       ...raw,
       minPrice: parseNumberOrEmpty(raw.minPrice),
       maxPrice: parseNumberOrEmpty(raw.maxPrice),
-      minRating: parseNumberOrEmpty(raw.minRating),
     };
 
     // Boş stringleri kaldır (0/false hariç)
@@ -116,6 +143,16 @@ const ProductFilter = ({ show, onHide, onFilter }) => {
     if (payload.status) {
       payload.isActive = payload.status === 'active';
       delete payload.status;
+    }
+
+    // showProduct -> boolean
+    if (payload.showProduct !== '') {
+      payload.showProduct = payload.showProduct === 'true';
+    }
+
+    // freeShipping -> boolean
+    if (payload.freeShipping !== '') {
+      payload.freeShipping = payload.freeShipping === 'true';
     }
 
     // Tarihler ISO string (YYYY-MM-DD)
@@ -218,23 +255,6 @@ const ProductFilter = ({ show, onHide, onFilter }) => {
                   </FormSelect>
                 </Col>
 
-                {/* Min Rating */}
-                <Col md={6} className="mb-3">
-                  <FormLabel>Min Rating</FormLabel>
-                  <FormSelect
-                    {...register('minRating', {
-                      setValueAs: (v) => (v === '' ? '' : Number(v)),
-                    })}
-                  >
-                    <option value="">Rating Seçiniz</option>
-                    <option value="1">1 Yıldız ve Üzeri</option>
-                    <option value="2">2 Yıldız ve Üzeri</option>
-                    <option value="3">3 Yıldız ve Üzeri</option>
-                    <option value="4">4 Yıldız ve Üzeri</option>
-                    <option value="5">5 Yıldız</option>
-                  </FormSelect>
-                </Col>
-
                 {/* Oluşturulma Tarihi (Başlangıç/Bitiş) */}
                 <Col md={6} className="mb-3">
                   <FormLabel>Oluşturulma Tarihi</FormLabel>
@@ -292,6 +312,52 @@ const ProductFilter = ({ show, onHide, onFilter }) => {
                   <FormLabel>Durum</FormLabel>
                   <FormSelect {...register('status')}>
                     {STATUS_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value}>
+                        {o.label}
+                      </option>
+                    ))}
+                  </FormSelect>
+                </Col>
+
+                {/* Marka Adı */}
+                <Col md={6} className="mb-3">
+                  <FormLabel>Marka Adı</FormLabel>
+                  <FormControl
+                    type="text"
+                    placeholder="Marka adı giriniz"
+                    {...register('brandName')}
+                  />
+                </Col>
+
+                {/* Satış Birimi */}
+                <Col md={6} className="mb-3">
+                  <FormLabel>Satış Birimi</FormLabel>
+                  <FormSelect {...register('salesUnit')}>
+                    {SALES_UNIT_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value}>
+                        {o.label}
+                      </option>
+                    ))}
+                  </FormSelect>
+                </Col>
+
+                {/* Ürün Gösterimi */}
+                <Col md={6} className="mb-3">
+                  <FormLabel>Ürün Gösterimi</FormLabel>
+                  <FormSelect {...register('showProduct')}>
+                    {SHOW_PRODUCT_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value}>
+                        {o.label}
+                      </option>
+                    ))}
+                  </FormSelect>
+                </Col>
+
+                {/* Kargo Durumu */}
+                <Col md={6} className="mb-3">
+                  <FormLabel>Kargo Durumu</FormLabel>
+                  <FormSelect {...register('freeShipping')}>
+                    {FREE_SHIPPING_OPTIONS.map((o) => (
                       <option key={o.value} value={o.value}>
                         {o.label}
                       </option>

@@ -28,15 +28,9 @@ const addIfPresent = (obj, key, val) => {
 
 const buildQueryFilter = (params = {}) => {
   const qf = {};
-  addIfPresent(qf, 'productName', params.productName);
-  addIfPresent(qf, 'category', params.category);
-  addIfPresent(qf, 'minPrice', params.minPrice);
-  addIfPresent(qf, 'maxPrice', params.maxPrice);
-  addIfPresent(qf, 'stockStatus', params.stockStatus);
-  addIfPresent(qf, 'brandName', params.brandName);
-  addIfPresent(qf, 'salesUnit', params.salesUnit);
-  addIfPresent(qf, 'showProduct', params.showProduct);
-  addIfPresent(qf, 'freeShipping', params.freeShipping);
+  addIfPresent(qf, 'categoryName', params.categoryName);
+  addIfPresent(qf, 'isActive', params.isActive);
+  addIfPresent(qf, 'parentCategoryUUID', params.parentCategoryUUID);
   return qf;
 };
 
@@ -50,59 +44,23 @@ const buildPageRequest = (params = {}) => ({
 
 const hasAnyFilter = (params = {}) => Object.keys(buildQueryFilter(params)).length > 0;
 
-/** güvenli görsel url (blob veya http/https), yoksa null döndür */
-const normalizeImageUrls = (list) => {
-  if (!Array.isArray(list)) return [];
-  return list
-    .filter(Boolean)
-    .map(String)
-    .filter(u => u.startsWith('http://') || u.startsWith('https://') || u.startsWith('blob:'));
-};
+/** tekil kategori normalizasyonu */
+const normalizeCategory = (c) => ({
+  id: c.uuid,
+  uuid: c.uuid,
+  createdAt: c.createdAt ?? null,
+  updatedAt: c.updatedAt ?? null,
 
-/** tekil ürün normalizasyonu */
-const normalizeProduct = (p) => ({
-  id: p.uuid,
-  createdAt: p.createdAt ?? null,
-  updatedAt: p.updatedAt ?? null,
+  name: c.name ?? '',
+  description: c.description ?? '',
+  
+  isActive: Boolean(c.isActive),
+  isDeleted: Boolean(c.isDeleted),
 
-  name: p.productName ?? '',
-  sku: p.productSku ?? '',
-  description: p.productDescription ?? '',
-  shortDescription: p.productShortDescription ?? '',
-
-  originalPrice: Number(p.originalPrice ?? 0),
-  sellPrice: Number(p.sellPrice ?? 0),
-  effectivePrice: Number(p.effectivePrice ?? 0),
-
-  originalPriceInclVat: Number(p.originalPriceInclVat ?? 0),
-  sellPriceInclVat: Number(p.sellPriceInclVat ?? 0),
-  effectivePriceIncVat: Number(p.effectivePriceIncVat ?? 0),
-  vatAmount: Number(p.vatAmount ?? 0),
-  vatRate: Number(p.vatRate ?? 0),
-
-  discountAmount: Number(p.discountAmount ?? 0),
-  discountPercentage: Number(p.discountPercentage ?? 0),
-  hasDiscount: Boolean(p.hasDiscount),
-
-  totalStock: Number(p.totalStock ?? 0),
-  barcode: p.productBarcode ?? '',
-
-  images: normalizeImageUrls(p.productImageUrlList),
-
-  isActive: Boolean(p.isActive),
-  isDeleted: Boolean(p.isDeleted),
-
-  // Yeni alanlar
-  brandUUID: p.brandUUID ?? null,
-  brandName: p.brandName ?? '',
-  currencyCode: p.currencyCode ?? 'TRY',
-  vatIncluded: Boolean(p.vatIncluded),
-  showProduct: Boolean(p.showProduct),
-  salesUnit: p.salesUnit ?? null,
-  desi1: p.desi1 ? Number(p.desi1) : null,
-  desi2: p.desi2 ? Number(p.desi2) : null,
-  fixedShippingPrice: p.fixedShippingPrice ? Number(p.fixedShippingPrice) : null,
-  freeShipping: Boolean(p.freeShipping),
+  parentCategoryUUID: c.parentCategoryUUID ?? null,
+  childCategories: Array.isArray(c.childCategories) 
+    ? c.childCategories.map(normalizeCategory) 
+    : [],
 });
 
 /** response -> normalize { items, page, size, totalElements, ... } */
@@ -118,7 +76,7 @@ const normalizeListResponse = (json) => {
     code: Number(json?.code ?? 0),
     timestamp: json?.timestamp ?? null,
 
-    items: content.map(normalizeProduct),
+    items: content.map(normalizeCategory),
 
     page: Number(data.page ?? 0),
     size: Number(data.size ?? content.length ?? 0),
@@ -134,15 +92,15 @@ const normalizeListResponse = (json) => {
 /* ------------------------------ API ------------------------------- */
 
 /**
- * Ürünleri getirir.
+ * Kategorileri getirir.
  * Dönen değer normalize edilmiş bir obje:
  * {
- *   items: NormalizedProduct[],
+ *   items: NormalizedCategory[],
  *   page, size, totalElements, totalPages, first, last, hasNext, hasPrevious,
  *   success, message, statusCode, code, timestamp
  * }
  */
-export const fetchProducts = async (params = {}) => {
+export const fetchCategories = async (params = {}) => {
   const headers = getAuthHeaders();
 
   try {
@@ -150,7 +108,7 @@ export const fetchProducts = async (params = {}) => {
 
     // filtreli çağrı
     if (hasAnyFilter(params)) {
-      const url = `${API_BASE_URL}/product/get-all/filtered`;
+      const url = `${API_BASE_URL}/product/category/get-all/filtered`;
       const body = { pageRequest, queryFilter: buildQueryFilter(params) };
 
       const resp = await fetch(url, {
@@ -172,19 +130,44 @@ export const fetchProducts = async (params = {}) => {
     qp.append('sortDirection', pageRequest.sortDirection);
     qp.append('paginated', String(pageRequest.paginated));
 
-    const url = `${API_BASE_URL}/product/get-all?${qp.toString()}`;
+    const url = `${API_BASE_URL}/product/category/get-all?${qp.toString()}`;
     const resp = await fetch(url, { method: 'GET', headers });
 
     if (!resp.ok) throw new Error(`HTTP error! status: ${resp.status}`);
     const json = await resp.json();
     return normalizeListResponse(json);
   } catch (error) {
-    console.error('Error fetching products:', error);
+    console.error('Error fetching categories:', error);
+    throw error;
+  }
+};
+
+/**
+ * Kategori detayını getirir
+ */
+export const fetchCategoryDetail = async (uuid) => {
+  const headers = getAuthHeaders();
+  
+  try {
+    const url = `${API_BASE_URL}/product/category/detail/${uuid}`;
+    const resp = await fetch(url, { method: 'GET', headers });
+
+    if (!resp.ok) throw new Error(`HTTP error! status: ${resp.status}`);
+    const json = await resp.json();
+    
+    return {
+      success: Boolean(json?.success),
+      message: json?.message ?? '',
+      category: json?.data?.category ? normalizeCategory(json.data.category) : null,
+    };
+  } catch (error) {
+    console.error('Error fetching category detail:', error);
     throw error;
   }
 };
 
 /* ---------------------------- namespace --------------------------- */
 
-const productApi = { fetchProducts };
-export default productApi;
+const categoryApi = { fetchCategories, fetchCategoryDetail };
+export default categoryApi;
+

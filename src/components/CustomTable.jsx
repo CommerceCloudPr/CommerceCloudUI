@@ -147,15 +147,30 @@ const CustomTable = (props) => {
                             if (col.type === 'toggle') {
                                 return <td key={cIdx}><FormCheck type="switch" onChange={() => col.onClick(row, col)} id={`switch-${idx}-${cIdx}`} checked={row[col.value] === 'ACTIVE' ? true : false} /></td>
                             } else if (col.type === 'badge') {
-                                const roleStyles = {
-                                    'Admin': { bg: 'success', text: 'text-success' },
-                                    'Editor': { bg: 'info', text: 'text-info' },
-                                    'Viewer': { bg: 'secondary', text: 'text-secondary' }
+                                // Dinamik badge desteği
+                                let badgeVariant = 'secondary';
+                                let badgeText = row[col.value];
+
+                                if (col.getBadgeVariant) {
+                                    badgeVariant = col.getBadgeVariant(row);
+                                } else {
+                                    // Eski statik roleStyles desteği
+                                    const roleStyles = {
+                                        'Admin': { bg: 'success', text: 'text-success' },
+                                        'Editor': { bg: 'info', text: 'text-info' },
+                                        'Viewer': { bg: 'secondary', text: 'text-secondary' }
+                                    }
+                                    const style = roleStyles[row[col.value]] || { bg: 'secondary', text: 'text-secondary' }
+                                    badgeVariant = style.bg;
                                 }
-                                const style = roleStyles[row[col.value]] || { bg: 'secondary', text: 'text-secondary' }
+
+                                if (col.getBadgeText) {
+                                    badgeText = col.getBadgeText(row);
+                                }
+
                                 return <td key={cIdx}>
-                                    <span className={`badge badge-soft-${style.bg} rounded-pill ${style.text} fw-semibold`}>
-                                        {row[col.value]}
+                                    <span className={`badge badge-soft-${badgeVariant} rounded-pill text-${badgeVariant} fw-semibold`}>
+                                        {badgeText}
                                     </span>
                                 </td>
                             } else if (col.type === 'permissions') {
@@ -246,18 +261,24 @@ const CustomTable = (props) => {
                                     </span>
                                     {rating.review} Review
                                 </td>
-                            } else if (col.type === 'product-actions') {
+                            } else if (col.type === 'product-actions' || col.type === 'category-actions') {
                                 return <td key={cIdx}>
                                     <div className="d-flex gap-2">
-                                        <Button variant="soft-info" size="sm" onClick={() => col.onView && col.onView(row)}>
-                                            <IconifyIcon icon="solar:eye-broken" className="align-middle fs-18" />
-                                        </Button>
-                                        <Button variant="soft-primary" size="sm" onClick={() => col.onEdit && col.onEdit(row)}>
-                                            <IconifyIcon icon="solar:pen-2-broken" className="align-middle fs-18" />
-                                        </Button>
-                                        <Button variant="soft-danger" size="sm" onClick={() => col.onDelete && col.onDelete(row)}>
-                                            <IconifyIcon icon="solar:trash-bin-minimalistic-2-broken" className="align-middle fs-18" />
-                                        </Button>
+                                        {col.onView && (
+                                            <Button variant="soft-info" size="sm" onClick={() => col.onView(row)}>
+                                                <IconifyIcon icon="solar:eye-broken" className="align-middle fs-18" />
+                                            </Button>
+                                        )}
+                                        {col.onEdit && (
+                                            <Button variant="soft-primary" size="sm" onClick={() => col.onEdit(row)}>
+                                                <IconifyIcon icon="solar:pen-2-broken" className="align-middle fs-18" />
+                                            </Button>
+                                        )}
+                                        {col.onDelete && (
+                                            <Button variant="soft-danger" size="sm" onClick={() => col.onDelete(row)}>
+                                                <IconifyIcon icon="solar:trash-bin-minimalistic-2-broken" className="align-middle fs-18" />
+                                            </Button>
+                                        )}
                                     </div>
                                 </td>
                             } else if (col.type === 'checkbox') {

@@ -1,137 +1,224 @@
-"use client";
+'use client';
+import { useEffect, useState, useCallback, useMemo } from 'react';
+import CustomTable from '../../../../../components/CustomTable';
+import Pagination from '../../../../../components/Pagination';
+import { Button } from 'react-bootstrap';
+import { useRouter } from 'next/navigation';
+import IconifyIcon from '@/components/wrappers/IconifyIcon';
+import PageTItle from '@/components/PageTItle';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import Spinner from '@/components/Spinner';
+import { fetchCategories } from '@/utils/categoryApi';
+import CategoryFilter from './CategoryFilter';
 
-import React, { useState, useMemo, useEffect } from "react";
-import { Card, CardHeader, CardTitle, Col, Row } from "react-bootstrap";
+const toastify = ({ props, message }) =>
+  toast(message, { ...props, hideProgressBar: true, theme: 'colored', icon: false });
 
 const CategoryList = () => {
+  const router = useRouter();
 
-  const [originalData, setOriginalData] = useState([])
-  const session = localStorage.getItem('session_token');
-  const [open, setOpen] = useState({});
-  const [sortField, setSortField] = useState("name");
-  const [sortOrder, setSortOrder] = useState("asc");
-  const [page, setPage] = useState(1);
-  const pageSize = 2;
+  const [data, setData] = useState([]);
+  const [showFilter, setShowFilter] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [selectedCategories, setSelectedCategories] = useState([]);
 
-  const toggle = (id) => {
-    setOpen((prev) => ({ ...prev, [id]: !prev[id] }));
-  };
+  // server-side pagination & sort
+  const [pagination, setPagination] = useState({
+    currentPage: 0,
+    totalPages: 0,
+    totalElements: 0,
+    pageSize: 10,
+  });
 
-  const toggleSort = (field) => {
-    if (sortField === field) {
-      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-    } else {
-      setSortField(field);
-      setSortOrder("asc");
+  const [filters, setFilters] = useState({});
+  const [sortConfig, setSortConfig] = useState({
+    sortBy: 'createdAt',
+    sortDirection: 'ASC',
+  });
+
+  // kolonlar
+  const columns = useMemo(
+    () => [
+      {
+        label: '',
+        value: 'checkbox',
+        type: 'checkbox',
+        sortable: false,
+        selectedItems: selectedCategories,
+        onChange: (row, checked) => {
+          setSelectedCategories((prev) =>
+            checked ? [...prev, row.id] : prev.filter((id) => id !== row.id)
+          );
+        },
+        onSelectAll: (checked) => {
+          setSelectedCategories(checked ? data.map((item) => item.id) : []);
+        },
+      },
+      { label: 'Kategori Adı', value: 'name', type: 'text' },
+      { label: 'Açıklama', value: 'description', type: 'text' },
+      { label: 'Alt Kategoriler', value: 'childCount', type: 'text', sortable: false },
+      { 
+        label: 'Durum', 
+        value: 'status', 
+        type: 'badge',
+        sortable: false,
+        getBadgeVariant: (row) => row.isActive ? 'success' : 'danger',
+        getBadgeText: (row) => row.isActive ? 'Aktif' : 'Pasif',
+      },
+      {
+        label: 'İşlemler',
+        value: 'actions',
+        type: 'category-actions',
+        sortable: false,
+        onView: (row) => router.push(`/category/${row.id}/detail`),
+        onEdit: (row) => router.push(`/category/category-edit?id=${row.id}`),
+        onDelete: (row) => {
+          // TODO: delete endpoint
+          console.log('Delete category:', row.id);
+        },
+      },
+    ],
+    [selectedCategories, data, router]
+  );
+
+  const mapToRow = (c) => ({
+    id: c.id,
+    uuid: c.uuid,
+    name: c.name || '—',
+    description: c.description || '—',
+    childCount: Array.isArray(c.childCategories) ? c.childCategories.length : 0,
+    isActive: c.isActive,
+    status: c.isActive ? 'Aktif' : 'Pasif',
+    raw: c,
+  });
+
+  const fetchCategoriesData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params = {
+        page: pagination.currentPage,
+        size: pagination.pageSize,
+        sortBy: sortConfig.sortBy,
+        sortDirection: sortConfig.sortDirection,
+        paginated: true,
+        ...filters,
+      };
+
+      const res = await fetchCategories(params);
+
+      const items = Array.isArray(res.items) ? res.items : [];
+      const rows = items.map(mapToRow);
+      setData(rows);
+
+      setPagination((prev) => ({
+        ...prev,
+        currentPage: res.page ?? prev.currentPage,
+        pageSize: res.size ?? prev.pageSize,
+        totalPages: res.totalPages ?? 0,
+        totalElements: res.totalElements ?? rows.length,
+      }));
+
+      setSelectedCategories([]);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      toastify({ props: { type: 'error' }, message: 'Kategoriler yüklenirken hata oluştu' });
+    } finally {
+      setLoading(false);
     }
+  }, [pagination.currentPage, pagination.pageSize, sortConfig, filters]);
+
+  const handlePageChange = (page) => {
+    setPagination((prev) => ({ ...prev, currentPage: page }));
   };
 
-  const rootCategories = useMemo(() => {
-    const seen = new Set(originalData.map(c => c.uuid));
-    // çocuk olup root'ta yer almayanları ele
-    originalData.forEach(cat => cat.childCategories?.forEach(child => seen.delete(child.uuid)));
-    return originalData.filter(cat => seen.has(cat.uuid));
-  }, [originalData]);
-  // sorting + pagination logic
-  const sortedData = useMemo(() => {
-    return [...rootCategories].sort((a, b) => {
-      const v1 = a[sortField].toLowerCase();
-      const v2 = b[sortField].toLowerCase();
-      if (v1 < v2) return sortOrder === "asc" ? -1 : 1;
-      if (v1 > v2) return sortOrder === "asc" ? 1 : -1;
-      return 0;
-    });
-  }, [sortField, sortOrder, rootCategories]);
-
-  const paginatedData = useMemo(() => {
-    const start = (page - 1) * pageSize;
-    return sortedData.slice(start, start + pageSize);
-  }, [sortedData, page]);
-
-  const paginated = sortedData.slice((page - 1) * pageSize, page * pageSize);
-  const totalPages = Math.ceil(sortedData.length / pageSize);
-  const renderRow = (row, level = 0) => {
-    const hasChildren = row.childCategories?.length > 0;
-
-    return (
-      <React.Fragment key={row.uuid}>
-        <tr>
-          <td className="p-3" style={{ paddingLeft: `${level * 20}px`, cursor: hasChildren ? "pointer" : "default" }}
-            onClick={() => hasChildren && toggle(row.uuid)}
-          >
-            {hasChildren ? (open[row.uuid] ? "▼" : "►") : ""} {row.name}
-          </td>
-          <td>{row.description}</td>
-        </tr>
-
-        {open[row.uuid] && row.childCategories?.map(child => renderRow(child, level + 1))}
-      </React.Fragment>
-    );
+  const handlePageSizeChange = (size) => {
+    setPagination((prev) => ({ ...prev, pageSize: size, currentPage: 0 }));
   };
+
+  const handleFilterChange = (newFilters) => {
+    setFilters(newFilters);
+    setPagination((prev) => ({ ...prev, currentPage: 0 }));
+  };
+
+  const handleSortChange = (sortBy, sortDirection) => {
+    setSortConfig({ sortBy, sortDirection });
+    setPagination((prev) => ({ ...prev, currentPage: 0 }));
+  };
+
   useEffect(() => {
-    fetch('https://api-dev.aykutcandan.com/product/category/get-all', {
-      headers: {
-        'Authorization': `Bearer ${decodeURIComponent(session)}`,
-      },
-    })
-      .then((res) => res.json())
-      .then((res) => {
-        setOriginalData(res.data.content)
-        /*  {
-        id: 1,
-        name: "Frontend Team",
-        children: [
-          { id: 11, name: "React Developer" },
-          { id: 12, name: "Next.js Developer" },
-        ],
-      },
-      */
-      })
-      .catch((err) => console.log(err))
-  }, [])
+    fetchCategoriesData();
+  }, [fetchCategoriesData]);
 
   return (
-    <Row>
-      <Col xl={12}>
-        <Card>
-          <CardHeader>
-            <CardTitle as={"h4"}>Categories</CardTitle>
-          </CardHeader>
-
-          <table className="table table-bordered">
-            <thead>
-              <tr>
-                <th onClick={() => toggleSort("name")} style={{ cursor: "pointer" }}>
-                  Name {sortField === "name" && (sortOrder === "asc" ? "↑" : "↓")}
-                </th>
-                <th>Description</th>
-              </tr>
-            </thead>
-            <tbody>{paginated.map(cat => renderRow(cat))}</tbody>
-          </table>
-
-          <div className="d-flex justify-content-center gap-2 my-3">
-            <button
-              className="btn btn-sm btn-outline-primary"
-              disabled={page === 1}
-              onClick={() => setPage(p => p - 1)}
+    <>
+      <PageTItle title="CATEGORY LIST" />
+      <div className="d-flex flex-column gap-4 justify-content-start">
+        <div className="d-flex justify-content-between w-100 align-items-center">
+          {/* Page Size Selector */}
+          <div className="d-flex align-items-center gap-2">
+            <span className="text-muted">Show</span>
+            <select
+              className="form-select form-select-sm"
+              style={{ width: '80px' }}
+              value={pagination.pageSize}
+              onChange={(e) => handlePageSizeChange(parseInt(e.target.value))}
             >
-              Prev
-            </button>
-
-            <span className="fw-bold px-2">{page} / {totalPages}</span>
-
-            <button
-              className="btn btn-sm btn-outline-primary"
-              disabled={page === totalPages}
-              onClick={() => setPage(p => p + 1)}
-            >
-              Next
-            </button>
+              <option value={5}>5</option>
+              <option value={10}>10</option>
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+            </select>
+            <span className="text-muted">entries</span>
           </div>
-        </Card>
-      </Col>
-    </Row>
+
+          {/* Action Buttons */}
+          <div className="d-flex gap-2">
+            <Button variant="outline-secondary" size="sm" onClick={() => setShowFilter(true)}>
+              <IconifyIcon icon="bx:filter-alt" className="me-1" />
+              Filters
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => router.push('/category/category-add')}
+            >
+              <IconifyIcon icon="bx:plus" className="me-1" />
+              Add Category
+            </Button>
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="d-flex justify-content-center align-items-center" style={{ height: '400px' }}>
+            <Spinner />
+          </div>
+        ) : (
+          <>
+            <CustomTable
+              data={data}
+              columns={columns}
+              pagination={pagination}
+            />
+
+            <Pagination
+              currentPage={pagination.currentPage}
+              totalPages={pagination.totalPages}
+              totalElements={pagination.totalElements}
+              pageSize={pagination.pageSize}
+              onPageChange={handlePageChange}
+              onPageSizeChange={handlePageSizeChange}
+            />
+          </>
+        )}
+      </div>
+
+      <CategoryFilter
+        show={showFilter}
+        onHide={() => setShowFilter(false)}
+        onFilter={handleFilterChange}
+      />
+    </>
   );
 };
 

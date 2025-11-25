@@ -60,7 +60,6 @@ const ProductList = () => {
       { label: 'Price', value: 'price', type: 'price' },
       { label: 'Stock', value: 'stock', type: 'stock', sortable: false },
       { label: 'Category', value: 'category', type: 'text' },
-      { label: 'Rating', value: 'rating', type: 'rating', sortable: false },
       {
         label: 'Action',
         value: 'actions',
@@ -93,7 +92,6 @@ const ProductList = () => {
     },
   
     category: '',
-    rating: { star: 0, review: 0 },
     raw: p,
   });
 
