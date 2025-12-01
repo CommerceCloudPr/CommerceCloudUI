@@ -1,8 +1,6 @@
 'use client';
-import { useEffect, useState, useCallback, useMemo } from 'react';
-import CustomTable from '../../../../../components/CustomTable';
-import Pagination from '../../../../../components/Pagination';
-import { Button } from 'react-bootstrap';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import { Button, Card, CardHeader, CardTitle, Col, Row } from 'react-bootstrap';
 import { useRouter } from 'next/navigation';
 import IconifyIcon from '@/components/wrappers/IconifyIcon';
 import PageTItle from '@/components/PageTItle';
@@ -18,132 +16,156 @@ const toastify = ({ props, message }) =>
 const CategoryList = () => {
   const router = useRouter();
 
-  const [data, setData] = useState([]);
+  const [originalData, setOriginalData] = useState([]);
   const [showFilter, setShowFilter] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [selectedCategories, setSelectedCategories] = useState([]);
-
-  // server-side pagination & sort
-  const [pagination, setPagination] = useState({
-    currentPage: 0,
-    totalPages: 0,
-    totalElements: 0,
-    pageSize: 10,
-  });
+  const [open, setOpen] = useState({});
+  const [sortField, setSortField] = useState('name');
+  const [sortOrder, setSortOrder] = useState('asc');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const [filters, setFilters] = useState({});
-  const [sortConfig, setSortConfig] = useState({
-    sortBy: 'createdAt',
-    sortDirection: 'ASC',
-  });
 
-  // kolonlar
-  const columns = useMemo(
-    () => [
-      {
-        label: '',
-        value: 'checkbox',
-        type: 'checkbox',
-        sortable: false,
-        selectedItems: selectedCategories,
-        onChange: (row, checked) => {
-          setSelectedCategories((prev) =>
-            checked ? [...prev, row.id] : prev.filter((id) => id !== row.id)
-          );
-        },
-        onSelectAll: (checked) => {
-          setSelectedCategories(checked ? data.map((item) => item.id) : []);
-        },
-      },
-      { label: 'Kategori Adı', value: 'name', type: 'text' },
-      { label: 'Açıklama', value: 'description', type: 'text' },
-      { label: 'Alt Kategoriler', value: 'childCount', type: 'text', sortable: false },
-      { 
-        label: 'Durum', 
-        value: 'status', 
-        type: 'badge',
-        sortable: false,
-        getBadgeVariant: (row) => row.isActive ? 'success' : 'danger',
-        getBadgeText: (row) => row.isActive ? 'Aktif' : 'Pasif',
-      },
-      {
-        label: 'İşlemler',
-        value: 'actions',
-        type: 'category-actions',
-        sortable: false,
-        onView: (row) => router.push(`/category/${row.id}/detail`),
-        onEdit: (row) => router.push(`/category/category-edit?id=${row.id}`),
-        onDelete: (row) => {
-          // TODO: delete endpoint
-          console.log('Delete category:', row.id);
-        },
-      },
-    ],
-    [selectedCategories, data, router]
-  );
+  const toggle = (id) => {
+    setOpen((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
 
-  const mapToRow = (c) => ({
-    id: c.id,
-    uuid: c.uuid,
-    name: c.name || '—',
-    description: c.description || '—',
-    childCount: Array.isArray(c.childCategories) ? c.childCategories.length : 0,
-    isActive: c.isActive,
-    status: c.isActive ? 'Aktif' : 'Pasif',
-    raw: c,
-  });
+  const toggleSort = (field) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortOrder('asc');
+    }
+  };
+
+  // Root kategorileri bul (parent olmayan)
+  const rootCategories = useMemo(() => {
+    const seen = new Set(originalData.map((c) => c.uuid));
+    // Çocuk kategorileri root'tan çıkar
+    originalData.forEach((cat) =>
+      cat.childCategories?.forEach((child) => seen.delete(child.uuid))
+    );
+    return originalData.filter((cat) => seen.has(cat.uuid));
+  }, [originalData]);
+
+  // Sıralama
+  const sortedData = useMemo(() => {
+    return [...rootCategories].sort((a, b) => {
+      const v1 = a[sortField]?.toLowerCase() || '';
+      const v2 = b[sortField]?.toLowerCase() || '';
+      if (v1 < v2) return sortOrder === 'asc' ? -1 : 1;
+      if (v1 > v2) return sortOrder === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [sortField, sortOrder, rootCategories]);
+
+  // Sayfalama
+  const paginatedData = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return sortedData.slice(start, start + pageSize);
+  }, [sortedData, page, pageSize]);
+
+  const totalPages = Math.ceil(sortedData.length / pageSize);
+
+  // Tree yapısında row render
+  const renderRow = (row, level = 0) => {
+    const hasChildren = row.childCategories?.length > 0;
+
+    return (
+      <React.Fragment key={row.uuid}>
+        <tr>
+          <td
+            className="p-3"
+            style={{
+              paddingLeft: `${level * 30 + 15}px`,
+            }}
+          >
+            <div className="d-flex align-items-center">
+              {hasChildren ? (
+                <span
+                  onClick={() => toggle(row.uuid)}
+                  style={{ cursor: 'pointer', marginRight: '8px', fontSize: '14px' }}
+                >
+                  {open[row.uuid] ? '▼' : '►'}
+                </span>
+              ) : (
+                <span style={{ marginRight: '22px' }}></span>
+              )}
+              <span>{row.name}</span>
+            </div>
+          </td>
+          <td className="p-3">{row.description || '—'}</td>
+          <td className="p-3">
+            <span
+              className={`badge badge-soft-${row.isActive ? 'success' : 'danger'} rounded-pill text-${row.isActive ? 'success' : 'danger'} fw-semibold`}
+            >
+              {row.isActive ? 'Aktif' : 'Pasif'}
+            </span>
+          </td>
+          <td className="p-3">
+            <div className="d-flex gap-2">
+              <Button
+                variant="soft-info"
+                size="sm"
+                onClick={() => router.push(`/category/${row.uuid}/detail`)}
+              >
+                <IconifyIcon icon="solar:eye-broken" className="align-middle fs-18" />
+              </Button>
+              <Button
+                variant="soft-primary"
+                size="sm"
+                onClick={() => router.push(`/category/category-edit?id=${row.uuid}`)}
+              >
+                <IconifyIcon icon="solar:pen-2-broken" className="align-middle fs-18" />
+              </Button>
+              <Button
+                variant="soft-danger"
+                size="sm"
+                onClick={() => console.log('Delete category:', row.uuid)}
+              >
+                <IconifyIcon icon="solar:trash-bin-minimalistic-2-broken" className="align-middle fs-18" />
+              </Button>
+            </div>
+          </td>
+        </tr>
+
+        {open[row.uuid] &&
+          row.childCategories?.map((child) => renderRow(child, level + 1))}
+      </React.Fragment>
+    );
+  };
 
   const fetchCategoriesData = useCallback(async () => {
     setLoading(true);
     try {
       const params = {
-        page: pagination.currentPage,
-        size: pagination.pageSize,
-        sortBy: sortConfig.sortBy,
-        sortDirection: sortConfig.sortDirection,
-        paginated: true,
+        page: 0,
+        size: 1000, // Tüm kategorileri al (tree yapısı için)
+        sortBy: 'createdAt',
+        sortDirection: 'ASC',
+        paginated: false, // Tree yapısı için tüm veriyi al
         ...filters,
       };
 
       const res = await fetchCategories(params);
-
       const items = Array.isArray(res.items) ? res.items : [];
-      const rows = items.map(mapToRow);
-      setData(rows);
-
-      setPagination((prev) => ({
-        ...prev,
-        currentPage: res.page ?? prev.currentPage,
-        pageSize: res.size ?? prev.pageSize,
-        totalPages: res.totalPages ?? 0,
-        totalElements: res.totalElements ?? rows.length,
-      }));
-
-      setSelectedCategories([]);
+      setOriginalData(items);
     } catch (error) {
       console.error('Error fetching categories:', error);
-      toastify({ props: { type: 'error' }, message: 'Kategoriler yüklenirken hata oluştu' });
+      toastify({
+        props: { type: 'error' },
+        message: 'Kategoriler yüklenirken hata oluştu',
+      });
     } finally {
       setLoading(false);
     }
-  }, [pagination.currentPage, pagination.pageSize, sortConfig, filters]);
-
-  const handlePageChange = (page) => {
-    setPagination((prev) => ({ ...prev, currentPage: page }));
-  };
-
-  const handlePageSizeChange = (size) => {
-    setPagination((prev) => ({ ...prev, pageSize: size, currentPage: 0 }));
-  };
+  }, [filters]);
 
   const handleFilterChange = (newFilters) => {
     setFilters(newFilters);
-    setPagination((prev) => ({ ...prev, currentPage: 0 }));
-  };
-
-  const handleSortChange = (sortBy, sortDirection) => {
-    setSortConfig({ sortBy, sortDirection });
-    setPagination((prev) => ({ ...prev, currentPage: 0 }));
+    setPage(1);
   };
 
   useEffect(() => {
@@ -161,8 +183,11 @@ const CategoryList = () => {
             <select
               className="form-select form-select-sm"
               style={{ width: '80px' }}
-              value={pagination.pageSize}
-              onChange={(e) => handlePageSizeChange(parseInt(e.target.value))}
+              value={pageSize}
+              onChange={(e) => {
+                setPageSize(parseInt(e.target.value));
+                setPage(1);
+              }}
             >
               <option value={5}>5</option>
               <option value={10}>10</option>
@@ -174,7 +199,11 @@ const CategoryList = () => {
 
           {/* Action Buttons */}
           <div className="d-flex gap-2">
-            <Button variant="outline-secondary" size="sm" onClick={() => setShowFilter(true)}>
+            <Button
+              variant="outline-secondary"
+              size="sm"
+              onClick={() => setShowFilter(true)}
+            >
               <IconifyIcon icon="bx:filter-alt" className="me-1" />
               Filters
             </Button>
@@ -190,26 +219,96 @@ const CategoryList = () => {
         </div>
 
         {loading ? (
-          <div className="d-flex justify-content-center align-items-center" style={{ height: '400px' }}>
+          <div
+            className="d-flex justify-content-center align-items-center"
+            style={{ height: '400px' }}
+          >
             <Spinner />
           </div>
         ) : (
-          <>
-            <CustomTable
-              data={data}
-              columns={columns}
-              pagination={pagination}
-            />
+          <Row>
+            <Col xl={12}>
+              <Card>
+                <CardHeader>
+                  <CardTitle as={'h4'}>Categories Tree</CardTitle>
+                </CardHeader>
 
-            <Pagination
-              currentPage={pagination.currentPage}
-              totalPages={pagination.totalPages}
-              totalElements={pagination.totalElements}
-              pageSize={pagination.pageSize}
-              onPageChange={handlePageChange}
-              onPageSizeChange={handlePageSizeChange}
-            />
-          </>
+                <div className="table-responsive">
+                  <table className="table table-hover table-centered table-striped">
+                    <thead className="table-light">
+                      <tr>
+                        <th
+                          className="p-3"
+                          onClick={() => toggleSort('name')}
+                          style={{ cursor: 'pointer', width: '35%' }}
+                        >
+                          <div className="d-flex align-items-center">
+                            <span>Kategori Adı</span>
+                            {sortField === 'name' && (
+                              <IconifyIcon
+                                icon={
+                                  sortOrder === 'asc'
+                                    ? 'bx:sort-up'
+                                    : 'bx:sort-down'
+                                }
+                                className="ms-2 text-primary"
+                              />
+                            )}
+                          </div>
+                        </th>
+                        <th className="p-3" style={{ width: '35%' }}>Açıklama</th>
+                        <th className="p-3" style={{ width: '15%' }}>Durum</th>
+                        <th className="p-3" style={{ width: '15%' }}>İşlemler</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paginatedData.length > 0 ? (
+                        paginatedData.map((cat) => renderRow(cat))
+                      ) : (
+                        <tr>
+                          <td colSpan={4} className="text-center text-muted py-4">
+                            Kategori bulunamadı
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Pagination */}
+                <div className="d-flex justify-content-between align-items-center p-3">
+                  <div className="text-muted">
+                    Toplam {sortedData.length} kayıt, Sayfa {page} / {totalPages || 1}
+                  </div>
+                  <div className="d-flex gap-2">
+                    <Button
+                      variant="outline-primary"
+                      size="sm"
+                      disabled={page === 1}
+                      onClick={() => setPage((p) => p - 1)}
+                    >
+                      <IconifyIcon icon="bx:chevron-left" />
+                      Prev
+                    </Button>
+
+                    <span className="fw-bold px-3 d-flex align-items-center">
+                      {page} / {totalPages || 1}
+                    </span>
+
+                    <Button
+                      variant="outline-primary"
+                      size="sm"
+                      disabled={page === totalPages || totalPages === 0}
+                      onClick={() => setPage((p) => p + 1)}
+                    >
+                      Next
+                      <IconifyIcon icon="bx:chevron-right" />
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            </Col>
+          </Row>
         )}
       </div>
 
