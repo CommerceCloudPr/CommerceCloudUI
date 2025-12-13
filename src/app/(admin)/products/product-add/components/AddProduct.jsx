@@ -28,6 +28,8 @@ const AddProduct = () => {
   const [changedData, setChangedData] = useState();
   const [eventKey, setEventKey] = useState('1')
   const [brand, setBrand] = useState([])
+  const [category, setCategory] = useState(null);
+  const [categoryList, setCategoryList] = useState([])
   const [product, setProduct] = useState({
     productName: null,
     productSku: null,
@@ -51,7 +53,8 @@ const AddProduct = () => {
     fixedShippingPrice: null, //number
     freeShipping: false //boolean
   })
-
+  const [attributeList, setAttributeList] = useState([]);
+  const [attribute, setAttribute] = useState(null);
   const handleSaveProduct = () => {
     let temp = [];
     product.productImageUrlList?.map((item) => {
@@ -72,7 +75,7 @@ const AddProduct = () => {
       "vatRate": Number(product.vatRate),
       "brandUUID": product.brandUUID,
       "vatIncluded": product.vatIncluded,
-      "currencyCode" : product.currencyCode,
+      "currencyCode": product.currencyCode,
       "showProduct": product.showProduct,
       "salesUnit": product.salesUnit,
       "desi1": Number(product.desi1),
@@ -96,13 +99,43 @@ const AddProduct = () => {
         .then((res) => res.json())
         .then((res) => {
           console.log(res.data)
+          if (category !== null) {
+            fetch('https://api-dev.aykutcandan.com/product/product-category/add',
+              {
+                method: "POST",
+                headers: {
+                  'Authorization': `Bearer ${decodeURIComponent(session)}`,
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                  'productId': res.data.uuid,
+                  'categoryId': category
+                })
+
+              })
+          }
+          if (attribute !== null) {
+            fetch('https://api-dev.aykutcandan.com/product/product-attributes/add',
+              {
+                method: "POST",
+                headers: {
+                  'Authorization': `Bearer ${decodeURIComponent(session)}`,
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                  'productUUID': res.data.uuid,
+                  'attributeDefinitionUUID': attribute
+                })
+
+              })
+          }
           toastify({
             message: res?.message,
             props: {
               type: res?.success === true ? 'success' : 'error',
-
             }
           })
+
           if (res.success === true) {
             router.push('/products/product-list')
 
@@ -132,11 +165,41 @@ const AddProduct = () => {
 
             }
           })
-
         })
         .catch((err) => {
           console.log(err)
         })
+      if (category !== null) {
+        fetch('https://api-dev.aykutcandan.com/product/product-category/add',
+          {
+            method: "POST",
+            headers: {
+              'Authorization': `Bearer ${decodeURIComponent(session)}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              'productId': productId,
+              'categoryId': category
+            })
+
+          })
+      }
+      if (attribute !== null) {
+        fetch('https://api-dev.aykutcandan.com/product/product-attributes/add',
+          {
+            method: "POST",
+            headers: {
+              'Authorization': `Bearer ${decodeURIComponent(session)}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              'productUUID': productId,
+              'attributeDefinitionUUID': attribute
+            })
+
+          })
+      }
+
     }
   }
 
@@ -149,6 +212,30 @@ const AddProduct = () => {
     })
       .then((res) => res.json())
       .then((res) => setBrand(res.data.content))
+      .catch((err) => console.log(err))
+  }
+
+  const getCategories = () => {
+    fetch('https://api-dev.aykutcandan.com/product/category/get-all', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${decodeURIComponent(session)}`,
+      },
+    })
+      .then((res) => res.json())
+      .then((res) => setCategoryList(res.data.content))
+      .catch((err) => console.log(err))
+  }
+
+  const getAttributes = () => {
+    fetch('https://api-dev.aykutcandan.com/product/attributes-definitions/get-all', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${decodeURIComponent(session)}`,
+      },
+    })
+      .then((res) => res.json())
+      .then((res) => setAttributeList(res.data.content))
       .catch((err) => console.log(err))
   }
 
@@ -191,6 +278,30 @@ const AddProduct = () => {
             freeShipping: response.freeShipping //boolean
 
           })
+          setChangedData({
+            ...product,
+            productName: response.productName,
+            productSku: response.productSku,
+            originalPrice: response.originalPrice,
+            sellPrice: response.sellPrice,
+            productDescription: response.productDescription,
+            productShortDescription: response.productShortDescription,
+            totalStock: response.totalStock,
+            productBarcode: response.productBarcode,
+            productImageUrlList: response.productImageUrlList,
+            isActive: response.isActive,
+            isDeleted: response.isDeleted,
+            vatRate: response.vatRate,
+            currencyCode: response.currencyCode, //string
+            brandUUID: response.brandUUID,//string
+            vatIncluded: response.vatIncluded,//boolean
+            showProduct: response.showProduct,//boolean
+            salesUnit: response.salesUnit, //string
+            desi1: response.desi1, //number
+            desi2: response.desi2, //number
+            fixedShippingPrice: response.fixedShippingPrice, //number
+            freeShipping: response.freeShipping //boolean
+          })
           setLoading(true)
         })
         .catch((err) => console.log(err))
@@ -198,25 +309,15 @@ const AddProduct = () => {
       setLoading(true)
     }
     getBrands()
+    getCategories()
+    getAttributes()
   }, [])
-  const products = [product1, product10, product13, product14];
   const [activeIndex, setActiveIndex] = useState(0);
   const handleSelect = selectedIndex => {
     setActiveIndex(selectedIndex);
   };
   const handleThunkSelect = index => {
     setActiveIndex(index);
-  };
-  const [quantity, setQuantity] = useState(1);
-  const increment = () => {
-    setQuantity(prevQuantity => prevQuantity + 1);
-  };
-  const decrement = () => {
-    if (quantity > 1) {
-      setQuantity(prevQuantity => prevQuantity - 1);
-    } else {
-      setQuantity(1);
-    }
   };
 
   return loading === true && <Row xl={12} lg={10}>
@@ -535,6 +636,40 @@ const AddProduct = () => {
                     }} />
                   </div>
 
+                </Col>
+              </Row>
+              <Row>
+                <Col lg={6}>
+                  <div className="mb-3">
+                    <label htmlFor="product-name" className="form-label">
+                      Category
+                    </label>
+                    <FormSelect defaultValue={category} onChange={(e) => {
+                      setCategory(e.target.value)
+                    }}>
+                      {
+                        categoryList?.map((item, key) => {
+                          return <option key={key} value={item.uuid}>{item.name}</option>
+                        })
+                      }
+                    </FormSelect>
+                  </div>
+                </Col>
+                <Col lg={6}>
+                  <div className="mb-3">
+                    <label htmlFor="product-name" className="form-label">
+                      Attributes
+                    </label>
+                    <FormSelect defaultValue={attribute} onChange={(e) => {
+                      setAttribute(e.target.value)
+                    }}>
+                      {
+                        attributeList?.map((item, key) => {
+                          return <option key={key} value={item.uuid}>{item.attributeName}</option>
+                        })
+                      }
+                    </FormSelect>
+                  </div>
                 </Col>
               </Row>
               <Row>

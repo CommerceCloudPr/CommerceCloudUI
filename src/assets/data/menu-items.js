@@ -38,7 +38,18 @@ export const MENU_ITEMS = [{
     parentKey: 'products'
   }]
 },
- {
+{
+  key: 'attribute',
+  icon: 'solar:clipboard-list-bold-duotone',
+  label: 'Attribute',
+  children: [{
+    key: 'attribute-list',
+    label: 'List',
+    url: '/attribute/attribute-list',
+    parentKey: 'attribute'
+  }]
+},
+{
   key: 'category',
   icon: 'solar:clipboard-list-bold-duotone',
   label: 'Category',
@@ -58,8 +69,8 @@ export const MENU_ITEMS = [{
     url: '/category/category-add',
     parentKey: 'category'
   }]
-}, 
- {
+},
+{
   key: 'brand',
   icon: 'solar:clipboard-list-bold-duotone',
   label: 'Brand',
@@ -228,11 +239,11 @@ export const MENU_ITEMS = [{
   label: 'Profile',
   icon: 'solar:chat-square-like-bold-duotone',
   url: '/profile',
-  children : [{
-    key : 'address-list',
-    label : 'Address',
-    url : '/address',
-    parentKey : 'profile'
+  children: [{
+    key: 'address-list',
+    label: 'Address',
+    url: '/address',
+    parentKey: 'profile'
   }]
 }, {
   key: 'role',

@@ -261,7 +261,7 @@ const CustomTable = (props) => {
                                     </span>
                                     {rating.review} Review
                                 </td>
-                            } else if (col.type === 'product-actions' || col.type === 'category-actions') {
+                            } else if (col.type === 'product-actions' || col.type === 'category-actions' || col.type === 'attribute-actions') {
                                 return <td key={cIdx}>
                                     <div className="d-flex gap-2">
                                         {col.onView && (
