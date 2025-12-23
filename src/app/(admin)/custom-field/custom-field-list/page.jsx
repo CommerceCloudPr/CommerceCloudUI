@@ -52,10 +52,10 @@ const CustomFieldListPage = () => {
     resolver: yupResolver(messageSchema)
   });
 
-  const loadCustomFields = useCallback(async (page = 0) => {
+  const loadCustomFields = useCallback(async (page = 0, size = 10) => {
     setLoading(true);
     try {
-      const response = await fetchCustomFields({ page, size: pagination.size });
+      const response = await fetchCustomFields({ page, size });
       if (response.success) {
         setCustomFieldData(response.items);
         setPagination({
@@ -74,12 +74,11 @@ const CustomFieldListPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [pagination.size]);
+  }, []);
 
   useEffect(() => {
-    loadCustomFields(0);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    loadCustomFields(0, 10);
+  }, [loadCustomFields]);
 
   const handleDelete = async (uuid) => {
     if (!confirm('Bu custom field\'ı silmek istediğinizden emin misiniz?')) return;
@@ -91,7 +90,7 @@ const CustomFieldListPage = () => {
           message: 'Custom field başarıyla silindi',
           props: { type: 'success', position: 'top-right' }
         });
-        loadCustomFields(pagination.page);
+        loadCustomFields(pagination.page, pagination.size);
       } else {
         toastify({
           message: response.message || 'Silme işlemi başarısız',
@@ -147,7 +146,7 @@ const CustomFieldListPage = () => {
         });
         toggleModal();
         setEditingItem(null);
-        loadCustomFields(pagination.page);
+        loadCustomFields(pagination.page, pagination.size);
       } else {
         toastify({
           message: response.message || 'Custom field güncellenemedi',
