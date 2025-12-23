@@ -770,6 +770,80 @@ export const warehouseData = [{
   stockShipping: 3022,
   warehouseRevenue: 25737
 }];
+export const customFieldListData = [{
+  id: 'CF001',
+  name: 'product_color',
+  type: 'select',
+  typeBadge: 'primary',
+  entity: 'Product',
+  required: true,
+  isActive: true,
+  date: addOrSubtractDaysFromDate(1)
+}, {
+  id: 'CF002',
+  name: 'warranty_period',
+  type: 'number',
+  typeBadge: 'info',
+  entity: 'Product',
+  required: false,
+  isActive: true,
+  date: addOrSubtractDaysFromDate(5)
+}, {
+  id: 'CF003',
+  name: 'custom_note',
+  type: 'textarea',
+  typeBadge: 'warning',
+  entity: 'Order',
+  required: false,
+  isActive: true,
+  date: addOrSubtractDaysFromDate(10)
+}, {
+  id: 'CF004',
+  name: 'delivery_date',
+  type: 'date',
+  typeBadge: 'success',
+  entity: 'Order',
+  required: true,
+  isActive: false,
+  date: addOrSubtractDaysFromDate(15)
+}, {
+  id: 'CF005',
+  name: 'customer_type',
+  type: 'select',
+  typeBadge: 'primary',
+  entity: 'Customer',
+  required: true,
+  isActive: true,
+  date: addOrSubtractDaysFromDate(20)
+}, {
+  id: 'CF006',
+  name: 'newsletter_subscription',
+  type: 'checkbox',
+  typeBadge: 'danger',
+  entity: 'Customer',
+  required: false,
+  isActive: true,
+  date: addOrSubtractDaysFromDate(25)
+}, {
+  id: 'CF007',
+  name: 'category_description',
+  type: 'text',
+  typeBadge: 'secondary',
+  entity: 'Category',
+  required: false,
+  isActive: true,
+  date: addOrSubtractDaysFromDate(30)
+}, {
+  id: 'CF008',
+  name: 'user_department',
+  type: 'select',
+  typeBadge: 'primary',
+  entity: 'User',
+  required: true,
+  isActive: true,
+  date: addOrSubtractDaysFromDate(35)
+}];
+
 export const attributeListData = [{
   id: '301',
   variant: 'Brand',

@@ -1,6 +1,6 @@
 import { helpData } from '@/assets/data/help';
 import { dataTableRecords, emailsData, projectsData, timelineData, transactionsData } from '@/assets/data/other';
-import { attributeListData, ordersData, permissionsList, productData, reviewListData, roleListData, sellersData, socialGroupsData, userData, warehouseData } from '@/assets/data/products';
+import { attributeListData, customFieldListData, ordersData, permissionsList, productData, reviewListData, roleListData, sellersData, socialGroupsData, userData, warehouseData } from '@/assets/data/products';
 import { todoData } from '@/assets/data/task';
 import { notificationsData } from '@/assets/data/topbar';
 import { sleep } from '@/utils/promise';
@@ -17,6 +17,10 @@ export const getAllTimeline = async () => {
 };
 export const getAttributeData = async () => {
   return attributeListData;
+};
+
+export const getCustomFieldData = async () => {
+  return customFieldListData;
 };
 export const getHelpData = async () => {
   return helpData;

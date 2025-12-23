@@ -174,6 +174,21 @@ export const MENU_ITEMS = [{
     parentKey: 'attributes'
   }]
 }, {
+  key: 'custom-field',
+  label: 'Custom Field',
+  icon: 'solar:pen-new-square-bold-duotone',
+  children: [{
+    key: 'custom-field-list',
+    label: 'List',
+    url: '/custom-field/custom-field-list',
+    parentKey: 'custom-field'
+  }, {
+    key: 'custom-field-add',
+    label: 'Create',
+    url: '/custom-field/custom-field-add',
+    parentKey: 'custom-field'
+  }]
+}, {
   key: 'invoice',
   label: 'Invoices',
   icon: 'solar:bill-list-bold-duotone',

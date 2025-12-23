@@ -16,6 +16,7 @@ import Image from 'next/image';
 import * as yup from 'yup';
 import { yupResolver } from '@hookform/resolvers/yup';
 import TextFormInput from '@/components/form/TextFormInput';
+import { fetchCustomFieldsByEntity } from '@/utils/customFieldApi';
 const toastify = ({ props, message }) =>
   toast(message, { ...props, hideProgressBar: true, theme: 'colored', icon: false });
 const AddProduct = () => {
@@ -30,6 +31,8 @@ const AddProduct = () => {
   const [brand, setBrand] = useState([])
   const [category, setCategory] = useState(null);
   const [categoryList, setCategoryList] = useState([])
+  const [customFields, setCustomFields] = useState([])
+  const [customFieldValues, setCustomFieldValues] = useState({})
   const [product, setProduct] = useState({
     productName: null,
     productSku: null,
@@ -81,7 +84,8 @@ const AddProduct = () => {
       "desi1": Number(product.desi1),
       "desi2": Number(product.desi2),
       "fixedShippingPrice": Number(product.fixedShippingPrice),
-      "freeShipping": product.freeShipping
+      "freeShipping": product.freeShipping,
+      "customFieldValues": customFieldValues
     }
     if (productId === null) {
       fetch('https://api-dev.aykutcandan.com/product/add',
@@ -215,30 +219,6 @@ const AddProduct = () => {
       .catch((err) => console.log(err))
   }
 
-  const getCategories = () => {
-    fetch('https://api-dev.aykutcandan.com/product/category/get-all', {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${decodeURIComponent(session)}`,
-      },
-    })
-      .then((res) => res.json())
-      .then((res) => setCategoryList(res.data.content))
-      .catch((err) => console.log(err))
-  }
-
-  const getAttributes = () => {
-    fetch('https://api-dev.aykutcandan.com/product/attributes-definitions/get-all', {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${decodeURIComponent(session)}`,
-      },
-    })
-      .then((res) => res.json())
-      .then((res) => setAttributeList(res.data.content))
-      .catch((err) => console.log(err))
-  }
-
   useEffect(() => {
 
     if (productId !== null) {
@@ -309,8 +289,6 @@ const AddProduct = () => {
       setLoading(true)
     }
     getBrands()
-    getCategories()
-    getAttributes()
   }, [])
   const [activeIndex, setActiveIndex] = useState(0);
   const handleSelect = selectedIndex => {
@@ -368,6 +346,13 @@ const AddProduct = () => {
               <span>Arama Motoru Bilgileri</span>
             </NavLink>
           </NavItem>
+          {customFields.length > 0 && (
+            <NavItem as="li" onClick={() => setEventKey('7')}>
+              <NavLink eventKey={eventKey} active={eventKey === '7'}>
+                <span>Custom Fields</span>
+              </NavLink>
+            </NavItem>
+          )}
         </Nav>
       </TabContainer>
     </div>
@@ -916,6 +901,33 @@ const AddProduct = () => {
 
                 </Col>
               </Row>
+            </CardBody>
+          </Card>
+        }
+        {
+          eventKey === '7' && customFields.length > 0 && <Card>
+            <CardHeader>
+              <CardTitle as={'h4'}>Custom Fields</CardTitle>
+            </CardHeader>
+            <CardBody>
+              <Row>
+                {customFields.map((field, idx) => (
+                  <Col lg={6} key={field.uuid || idx}>
+                    <div className="mb-3">
+                      <label htmlFor={`custom-field-${field.uuid}`} className="form-label">
+                        {field.label || field.name}
+                        {field.isRequired && <span className="text-danger ms-1">*</span>}
+                      </label>
+                      {renderCustomFieldInput(field)}
+                    </div>
+                  </Col>
+                ))}
+              </Row>
+              {customFields.length === 0 && (
+                <div className="text-center text-muted py-4">
+                  No custom fields defined for products
+                </div>
+              )}
             </CardBody>
           </Card>
         }
