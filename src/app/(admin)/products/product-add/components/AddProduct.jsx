@@ -102,7 +102,7 @@ const AddProduct = () => {
       )
         .then((res) => res.json())
         .then((res) => {
-          console.log(res.data)
+          console.log(res)
           if (category !== null) {
             fetch('https://api-dev.aykutcandan.com/product/product-category/add',
               {
@@ -133,19 +133,32 @@ const AddProduct = () => {
 
               })
           }
-          toastify({
-            message: res?.message,
-            props: {
-              type: res?.success === true ? 'success' : 'error',
-            }
-          })
+          if (res.errors.length > 0) {
+            res.errors.map((item) => {
+              toastify({
+                message: item?.field + " " + item.message,
+                props: {
+                  type: res?.success === true ? 'success' : 'error',
+                }
+              })
+            })
+
+          } else {
+            toastify({
+              message: res?.message,
+              props: {
+                type: res?.success === true ? 'success' : 'error',
+              }
+            })
+          }
+
 
           if (res.success === true) {
             router.push('/products/product-list')
 
           }
         })
-        .catch((err) => console.log(err))
+        .catch((err) => console.log("err" + "err"))
     } else {
       fetch('https://api-dev.aykutcandan.com/product/update/' + productId,
         {
@@ -162,13 +175,24 @@ const AddProduct = () => {
         .then((res) => res.json())
         .then((res) => {
           console.log(res)
-          toastify({
-            message: res?.message,
-            props: {
-              type: res?.success === true ? 'success' : 'error',
+          if (res.errors.length > 0) {
+            res.errors.map((item) => {
+              toastify({
+                message: item?.field + " " + item.message,
+                props: {
+                  type: res?.success === true ? 'success' : 'error',
+                }
+              })
+            })
 
-            }
-          })
+          } else {
+            toastify({
+              message: res?.message,
+              props: {
+                type: res?.success === true ? 'success' : 'error',
+              }
+            })
+          }
         })
         .catch((err) => {
           console.log(err)
