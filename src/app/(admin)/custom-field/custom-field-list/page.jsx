@@ -48,7 +48,7 @@ const CustomFieldListPage = () => {
     label: yup.string().required('Please enter Display Label')
   });
 
-  const { handleSubmit, control, reset, setValue } = useForm({
+  const { handleSubmit, control, setValue } = useForm({
     resolver: yupResolver(messageSchema)
   });
 
@@ -77,8 +77,9 @@ const CustomFieldListPage = () => {
   }, [pagination.size]);
 
   useEffect(() => {
-    loadCustomFields();
-  }, [loadCustomFields]);
+    loadCustomFields(0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleDelete = async (uuid) => {
     if (!confirm('Bu custom field\'ı silmek istediğinizden emin misiniz?')) return;
