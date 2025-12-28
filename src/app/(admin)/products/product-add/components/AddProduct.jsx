@@ -1,22 +1,14 @@
+/* eslint-disable @next/next/no-img-element */
 'use client'
 import DropzoneFormInput from '@/components/form/DropzoneFormInput';
 import IconifyIcon from '@/components/wrappers/IconifyIcon';
 import { useRouter, useSearchParams } from 'next/navigation';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button, Card, CardBody, CardHeader, CardTitle, Carousel, CarouselItem, Col, FormCheck, FormSelect, Nav, NavItem, NavLink, Row, TabContainer } from 'react-bootstrap';
 import { toast } from 'react-toastify';
-import product1 from '@/assets/images/product/p-1.png';
-import product10 from '@/assets/images/product/p-10.png';
-import product13 from '@/assets/images/product/p-13.png';
-import product14 from '@/assets/images/product/p-14.png';
 import clsx from 'clsx';
 import 'react-toastify/dist/ReactToastify.css';
-import { useForm } from 'react-hook-form';
-import Image from 'next/image';
-import * as yup from 'yup';
-import { yupResolver } from '@hookform/resolvers/yup';
-import TextFormInput from '@/components/form/TextFormInput';
-import { fetchCustomFieldsByEntity } from '@/utils/customFieldApi';
+
 const toastify = ({ props, message }) =>
   toast(message, { ...props, hideProgressBar: true, theme: 'colored', icon: false });
 const AddProduct = () => {
@@ -313,6 +305,7 @@ const AddProduct = () => {
       setLoading(true)
     }
     getBrands()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
   const [activeIndex, setActiveIndex] = useState(0);
   const handleSelect = selectedIndex => {
@@ -465,6 +458,74 @@ const AddProduct = () => {
                 </Col>
               </Row>
               <Row>
+                <Col lg={6}>
+
+                  <div className="mb-3">
+                    <label htmlFor="product-name" className="form-label">
+                      Brand
+                    </label>
+                    <FormSelect onChange={(e) => {
+                      setProduct({ ...product, brandUUID: e.target.value })
+                      setChangedData({ ...changedData, brandUUID: e.target.value })
+                    }}>
+                      {
+                        brand?.map((item, key) => {
+                          return <option key={key} value={item.uuid}>{item.brandName}</option>
+                        })
+                      }
+                    </FormSelect>
+                  </div>
+
+                </Col>
+                <Col lg={6}>
+
+                  <div className="mb-3">
+                    <label htmlFor="product-barcode" className="form-label">
+                      Barcode
+                    </label>
+                    <input type="text" id="product-barcode" className="form-control" placeholder="Barcode" defaultValue={product.productBarcode} onChange={(e) => {
+                      setProduct({ ...product, productBarcode: e.target.value })
+                      setChangedData({ ...changedData, productBarcode: e.target.value })
+                    }} />
+                  </div>
+
+                </Col>
+              </Row>
+              <Row>
+                <Col lg={6}>
+                  <div className="mb-3">
+                    <label htmlFor="product-name" className="form-label">
+                      Category
+                    </label>
+                    <FormSelect defaultValue={category} onChange={(e) => {
+                      setCategory(e.target.value)
+                    }}>
+                      {
+                        categoryList?.map((item, key) => {
+                          return <option key={key} value={item.uuid}>{item.name}</option>
+                        })
+                      }
+                    </FormSelect>
+                  </div>
+                </Col>
+                <Col lg={6}>
+                  <div className="mb-3">
+                    <label htmlFor="product-name" className="form-label">
+                      Attributes
+                    </label>
+                    <FormSelect defaultValue={attribute} onChange={(e) => {
+                      setAttribute(e.target.value)
+                    }}>
+                      {
+                        attributeList?.map((item, key) => {
+                          return <option key={key} value={item.uuid}>{item.attributeName}</option>
+                        })
+                      }
+                    </FormSelect>
+                  </div>
+                </Col>
+              </Row>
+              <Row>
                 <Col lg={4}>
 
                   <label htmlFor="product-price" className="form-label">
@@ -613,74 +674,7 @@ const AddProduct = () => {
               <CardTitle as={'h4'}>Product Detail</CardTitle>
             </CardHeader>
             <CardBody>
-              <Row>
-                <Col lg={6}>
 
-                  <div className="mb-3">
-                    <label htmlFor="product-name" className="form-label">
-                      Brand
-                    </label>
-                    <FormSelect onChange={(e) => {
-                      setProduct({ ...product, brandUUID: e.target.value })
-                      setChangedData({ ...changedData, brandUUID: e.target.value })
-                    }}>
-                      {
-                        brand?.map((item, key) => {
-                          return <option key={key} value={item.uuid}>{item.brandName}</option>
-                        })
-                      }
-                    </FormSelect>
-                  </div>
-
-                </Col>
-                <Col lg={6}>
-
-                  <div className="mb-3">
-                    <label htmlFor="product-barcode" className="form-label">
-                      Barcode
-                    </label>
-                    <input type="text" id="product-barcode" className="form-control" placeholder="Barcode" defaultValue={product.productBarcode} onChange={(e) => {
-                      setProduct({ ...product, productBarcode: e.target.value })
-                      setChangedData({ ...changedData, productBarcode: e.target.value })
-                    }} />
-                  </div>
-
-                </Col>
-              </Row>
-              <Row>
-                <Col lg={6}>
-                  <div className="mb-3">
-                    <label htmlFor="product-name" className="form-label">
-                      Category
-                    </label>
-                    <FormSelect defaultValue={category} onChange={(e) => {
-                      setCategory(e.target.value)
-                    }}>
-                      {
-                        categoryList?.map((item, key) => {
-                          return <option key={key} value={item.uuid}>{item.name}</option>
-                        })
-                      }
-                    </FormSelect>
-                  </div>
-                </Col>
-                <Col lg={6}>
-                  <div className="mb-3">
-                    <label htmlFor="product-name" className="form-label">
-                      Attributes
-                    </label>
-                    <FormSelect defaultValue={attribute} onChange={(e) => {
-                      setAttribute(e.target.value)
-                    }}>
-                      {
-                        attributeList?.map((item, key) => {
-                          return <option key={key} value={item.uuid}>{item.attributeName}</option>
-                        })
-                      }
-                    </FormSelect>
-                  </div>
-                </Col>
-              </Row>
               <Row>
                 <Col lg={12}>
                   <div className="mb-3">
