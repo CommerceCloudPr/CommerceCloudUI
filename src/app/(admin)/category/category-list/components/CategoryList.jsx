@@ -107,13 +107,6 @@ const CategoryList = () => {
           <td className="p-3">
             <div className="d-flex gap-2">
               <Button
-                variant="soft-info"
-                size="sm"
-                onClick={() => router.push(`/category/${row.uuid}/detail`)}
-              >
-                <IconifyIcon icon="solar:eye-broken" className="align-middle fs-18" />
-              </Button>
-              <Button
                 variant="soft-primary"
                 size="sm"
                 onClick={() => router.push(`/category/category-edit?id=${row.uuid}`)}
@@ -164,8 +157,10 @@ const CategoryList = () => {
   }, [filters]);
 
   const handleFilterChange = (newFilters) => {
-    setFilters(newFilters);
+    setFilters(newFilters || {});
     setPage(1);
+    // Filter değiştiğinde loading state'i göster
+    setLoading(true);
   };
 
   useEffect(() => {

@@ -4,10 +4,16 @@ import DropzoneFormInput from '@/components/form/DropzoneFormInput';
 import IconifyIcon from '@/components/wrappers/IconifyIcon';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Button, Card, CardBody, CardHeader, CardTitle, Carousel, CarouselItem, Col, FormCheck, FormSelect, Nav, NavItem, NavLink, Row, TabContainer } from 'react-bootstrap';
+import { Button, Card, CardBody, CardHeader, CardTitle, Col, FormCheck, FormSelect, Nav, NavItem, NavLink, Row, TabContainer, Modal, ModalHeader, ModalTitle, ModalBody, ModalFooter, Spinner } from 'react-bootstrap';
 import { toast } from 'react-toastify';
-import clsx from 'clsx';
 import 'react-toastify/dist/ReactToastify.css';
+import { fetchCustomFieldsByEntity, createCustomField } from '@/utils/customFieldApi';
+import ChoicesFormInput from '@/components/form/ChoicesFormInput';
+import TextFormInput from '@/components/form/TextFormInput';
+import { useForm } from 'react-hook-form';
+import { yupResolver } from '@hookform/resolvers/yup';
+import * as yup from 'yup';
+import useModal from '@/hooks/useModal';
 
 const toastify = ({ props, message }) =>
   toast(message, { ...props, hideProgressBar: true, theme: 'colored', icon: false });
@@ -50,6 +56,21 @@ const AddProduct = () => {
   })
   const [attributeList, setAttributeList] = useState([]);
   const [attribute, setAttribute] = useState(null);
+  
+  // Custom Field Modal States
+  const { isOpen: isCustomFieldModalOpen, toggleModal: toggleCustomFieldModal } = useModal();
+  const [customFieldLoading, setCustomFieldLoading] = useState(false);
+  const [customFieldType, setCustomFieldType] = useState('text');
+  const [customFieldRequired, setCustomFieldRequired] = useState('no');
+
+  const customFieldSchema = yup.object({
+    name: yup.string().required('Field Name gereklidir'),
+    label: yup.string().required('Display Label gereklidir')
+  });
+
+  const { handleSubmit: handleCustomFieldSubmit, control: customFieldControl, reset: resetCustomFieldForm } = useForm({
+    resolver: yupResolver(customFieldSchema)
+  });
   const handleSaveProduct = () => {
     let temp = [];
     product.productImageUrlList?.map((item) => {
@@ -235,6 +256,185 @@ const AddProduct = () => {
       .catch((err) => console.log(err))
   }
 
+  const getCustomFields = async () => {
+    try {
+      const response = await fetchCustomFieldsByEntity('product', {
+        page: 0,
+        size: 100,
+        isActive: true
+      });
+      if (response && response.success && response.items && Array.isArray(response.items)) {
+        setCustomFields(response.items);
+      } else {
+        setCustomFields([]);
+      }
+    } catch (error) {
+      console.error('Error fetching custom fields:', error);
+      setCustomFields([]);
+    }
+  }
+
+  const handleCreateCustomField = async (data) => {
+    setCustomFieldLoading(true);
+    try {
+      const payload = {
+        name: data.name,
+        label: data.label,
+        type: customFieldType,
+        entityType: 'product',
+        placeholder: data.placeholder || '',
+        defaultValue: data.defaultValue || '',
+        options: data.options ? data.options.split(',').map(opt => opt.trim()) : [],
+        isRequired: customFieldRequired === 'yes',
+        isActive: true
+      };
+
+      const response = await createCustomField(payload);
+      if (response && response.success) {
+        toastify({
+          message: 'Custom field başarıyla oluşturuldu',
+          props: { type: 'success', position: 'top-right' }
+        });
+        resetCustomFieldForm();
+        setCustomFieldType('text');
+        setCustomFieldRequired('no');
+        toggleCustomFieldModal();
+        // Custom fields'ı yeniden yükle
+        await getCustomFields();
+      } else {
+        toastify({
+          message: (response && response.message) || 'Custom field oluşturulamadı',
+          props: { type: 'error', position: 'top-right' }
+        });
+      }
+    } catch (error) {
+      console.error('Error creating custom field:', error);
+      toastify({
+        message: 'Custom field oluşturulurken hata oluştu',
+        props: { type: 'error', position: 'top-right' }
+      });
+    } finally {
+      setCustomFieldLoading(false);
+    }
+  };
+
+  const renderCustomFieldInput = (field) => {
+    if (!field || !field.uuid) return null;
+    
+    const fieldId = `custom-field-${field.uuid}`;
+    const fieldType = field.type || field.fieldType || 'text';
+    let fieldValue = customFieldValues[field.uuid];
+    
+    // Eğer değer yoksa default value kullan
+    if (fieldValue === undefined || fieldValue === null) {
+      fieldValue = field.defaultValue || '';
+    }
+
+    const handleChange = (value) => {
+      setCustomFieldValues(prev => ({
+        ...prev,
+        [field.uuid]: value
+      }));
+    };
+
+    switch (fieldType) {
+      case 'text':
+        return (
+          <input
+            type="text"
+            id={fieldId}
+            className="form-control"
+            placeholder={field.placeholder || ''}
+            value={fieldValue || ''}
+            onChange={(e) => handleChange(e.target.value)}
+            required={field.isRequired}
+          />
+        );
+      
+      case 'number':
+        return (
+          <input
+            type="number"
+            id={fieldId}
+            className="form-control"
+            placeholder={field.placeholder || ''}
+            value={fieldValue || ''}
+            onChange={(e) => handleChange(e.target.value)}
+            min={field.minValue}
+            max={field.maxValue}
+            required={field.isRequired}
+          />
+        );
+      
+      case 'date':
+        return (
+          <input
+            type="date"
+            id={fieldId}
+            className="form-control"
+            value={fieldValue || ''}
+            onChange={(e) => handleChange(e.target.value)}
+            required={field.isRequired}
+          />
+        );
+      
+      case 'select':
+        return (
+          <FormSelect
+            id={fieldId}
+            value={fieldValue || ''}
+            onChange={(e) => handleChange(e.target.value)}
+            required={field.isRequired}
+          >
+            <option value="">Seçiniz</option>
+            {field.options && Array.isArray(field.options) && field.options.map((option, idx) => (
+              <option key={idx} value={option}>
+                {option}
+              </option>
+            ))}
+          </FormSelect>
+        );
+      
+      case 'checkbox':
+        const checkboxValue = fieldValue === true || fieldValue === 'true' || fieldValue === 1 || fieldValue === '1';
+        return (
+          <FormCheck
+            type="checkbox"
+            id={fieldId}
+            checked={checkboxValue}
+            onChange={(e) => handleChange(e.target.checked)}
+            required={field.isRequired}
+          />
+        );
+      
+      case 'textarea':
+        return (
+          <textarea
+            id={fieldId}
+            className="form-control"
+            rows={4}
+            placeholder={field.placeholder || ''}
+            value={fieldValue || ''}
+            onChange={(e) => handleChange(e.target.value)}
+            required={field.isRequired}
+          />
+        );
+      
+      default:
+        return (
+          <input
+            type="text"
+            id={fieldId}
+            className="form-control"
+            placeholder={field.placeholder || ''}
+            value={fieldValue || ''}
+            onChange={(e) => handleChange(e.target.value)}
+            required={field.isRequired}
+          />
+        );
+    }
+  };
+
   useEffect(() => {
 
     if (productId !== null) {
@@ -305,15 +505,9 @@ const AddProduct = () => {
       setLoading(true)
     }
     getBrands()
+    getCustomFields()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
-  const [activeIndex, setActiveIndex] = useState(0);
-  const handleSelect = selectedIndex => {
-    setActiveIndex(selectedIndex);
-  };
-  const handleThunkSelect = index => {
-    setActiveIndex(index);
-  };
 
   return loading === true && <Row xl={12} lg={10}>
     <div className="p-3 mb-3 rounded">
@@ -363,39 +557,15 @@ const AddProduct = () => {
               <span>Arama Motoru Bilgileri</span>
             </NavLink>
           </NavItem>
-          {customFields.length > 0 && (
-            <NavItem as="li" onClick={() => setEventKey('7')}>
-              <NavLink eventKey={eventKey} active={eventKey === '7'}>
-                <span>Custom Fields</span>
-              </NavLink>
-            </NavItem>
-          )}
+          <NavItem as="li" onClick={() => setEventKey('7')}>
+            <NavLink eventKey={eventKey} active={eventKey === '7'}>
+              <span>Custom Fields</span>
+            </NavLink>
+          </NavItem>
         </Nav>
       </TabContainer>
     </div>
-    {
-      productId !== null && <Col xl={4}>
-        <Card>
-          <CardBody>
-            <div id="carouselExampleFade" className="carousel slide carousel-fade" data-bs-ride="carousel">
-              <Carousel activeIndex={activeIndex} onSelect={handleSelect} indicators={false} className="carousel-inner" role="listbox">
-                {product.productImageUrlList.map((item, idx) => <CarouselItem key={idx}>
-                  <img src={item} alt="productImg" className="img-fluid bg-light rounded" />
-                </CarouselItem>)}
-              </Carousel>
-              <div className="carousel-indicators m-0 mt-2 d-lg-flex d-none position-static h-100">
-                {product.productImageUrlList.map((item, idx) => <button key={idx} type="button" onClick={() => handleThunkSelect(idx)} data-bs-target="#carouselExampleFade" data-bs-slide-to={0} aria-current="true" id="Slide-1" className={clsx('w-auto h-auto rounded bg-light', {
-                  active: activeIndex === idx
-                })}>
-                  <img src={item} className="d-block avatar-xl" alt="swiper-indicator-img" />
-                </button>)}
-              </div>
-            </div>
-          </CardBody>
-        </Card>
-      </Col>
-    }
-    <Col xl={productId !== null ? 8 : 12}>
+    <Col xl={12}>
       <form className='mt-4'>
         {
           eventKey === '1' && <Card>
@@ -923,27 +1093,40 @@ const AddProduct = () => {
           </Card>
         }
         {
-          eventKey === '7' && customFields.length > 0 && <Card>
+          eventKey === '7' && <Card>
             <CardHeader>
-              <CardTitle as={'h4'}>Custom Fields</CardTitle>
+              <div className="d-flex justify-content-between align-items-center">
+                <CardTitle as={'h4'}>Custom Fields</CardTitle>
+                <Button variant="primary" size="sm" onClick={toggleCustomFieldModal}>
+                  <IconifyIcon icon="bx:plus" className="me-1" />
+                  Yeni Custom Field Ekle
+                </Button>
+              </div>
             </CardHeader>
             <CardBody>
-              <Row>
-                {customFields.map((field, idx) => (
-                  <Col lg={6} key={field.uuid || idx}>
-                    <div className="mb-3">
-                      <label htmlFor={`custom-field-${field.uuid}`} className="form-label">
-                        {field.label || field.name}
-                        {field.isRequired && <span className="text-danger ms-1">*</span>}
-                      </label>
-                      {renderCustomFieldInput(field)}
-                    </div>
-                  </Col>
-                ))}
-              </Row>
-              {customFields.length === 0 && (
+              {customFields && customFields.length > 0 ? (
+                <Row>
+                  {customFields.map((field, idx) => {
+                    if (!field || !field.uuid) return null;
+                    return (
+                      <Col lg={6} key={field.uuid || `field-${idx}`}>
+                        <div className="mb-3">
+                          <label htmlFor={`custom-field-${field.uuid}`} className="form-label">
+                            {field.label || field.name || 'Unnamed Field'}
+                            {field.isRequired && <span className="text-danger ms-1">*</span>}
+                          </label>
+                          {renderCustomFieldInput(field)}
+                        </div>
+                      </Col>
+                    );
+                  })}
+                </Row>
+              ) : (
                 <div className="text-center text-muted py-4">
-                  No custom fields defined for products
+                  <p>Henüz custom field tanımlanmamış</p>
+                  <Button variant="outline-primary" onClick={toggleCustomFieldModal}>
+                    İlk Custom Field&apos;ı Oluştur
+                  </Button>
                 </div>
               )}
             </CardBody>
@@ -951,6 +1134,149 @@ const AddProduct = () => {
         }
       </form>
     </Col>
+    
+    {/* Custom Field Add Modal */}
+    <Modal 
+      className="fade"
+      show={isCustomFieldModalOpen} 
+      onHide={() => {
+        resetCustomFieldForm();
+        setCustomFieldType('text');
+        setCustomFieldRequired('no');
+        toggleCustomFieldModal();
+      }} 
+      size="lg"
+    >
+      <form onSubmit={handleCustomFieldSubmit(handleCreateCustomField)}>
+        <ModalHeader onHide={toggleCustomFieldModal} closeButton>
+          <ModalTitle as="h5">Yeni Custom Field Ekle</ModalTitle>
+        </ModalHeader>
+        <ModalBody>
+          <Row>
+            <Col lg={6}>
+              <div className="mb-3">
+                <TextFormInput 
+                  control={customFieldControl} 
+                  type="text" 
+                  name="name" 
+                  label="Field Name" 
+                  placeholder="Field Name giriniz" 
+                />
+              </div>
+            </Col>
+            <Col lg={6}>
+              <div className="mb-3">
+                <TextFormInput 
+                  control={customFieldControl} 
+                  type="text" 
+                  name="label" 
+                  label="Display Label" 
+                  placeholder="Display Label giriniz" 
+                />
+              </div>
+            </Col>
+            <Col lg={6}>
+              <div className="mb-3">
+                <label htmlFor="customFieldType" className="form-label">
+                  Field Type
+                </label>
+                <ChoicesFormInput 
+                  className="form-control" 
+                  id="customFieldType" 
+                  data-choices 
+                  data-choices-groups 
+                  data-placeholder="Field Type seçiniz"
+                  onChange={(val) => setCustomFieldType(val)}
+                >
+                  <option value="text">Text</option>
+                  <option value="number">Number</option>
+                  <option value="date">Date</option>
+                  <option value="select">Select</option>
+                  <option value="checkbox">Checkbox</option>
+                  <option value="textarea">Textarea</option>
+                </ChoicesFormInput>
+              </div>
+            </Col>
+            <Col lg={6}>
+              <div className="mb-3">
+                <label htmlFor="customFieldRequired" className="form-label">
+                  Required
+                </label>
+                <ChoicesFormInput 
+                  className="form-control" 
+                  id="customFieldRequired" 
+                  data-choices 
+                  data-choices-groups 
+                  data-placeholder="Seçiniz"
+                  onChange={(val) => setCustomFieldRequired(val)}
+                >
+                  <option value="no">No</option>
+                  <option value="yes">Yes</option>
+                </ChoicesFormInput>
+              </div>
+            </Col>
+            <Col lg={6}>
+              <div className="mb-3">
+                <TextFormInput 
+                  control={customFieldControl} 
+                  type="text" 
+                  name="placeholder" 
+                  label="Placeholder Text" 
+                  placeholder="Placeholder Text giriniz" 
+                />
+              </div>
+            </Col>
+            <Col lg={6}>
+              <div className="mb-3">
+                <TextFormInput 
+                  control={customFieldControl} 
+                  type="text" 
+                  name="defaultValue" 
+                  label="Default Value" 
+                  placeholder="Default Value giriniz" 
+                />
+              </div>
+            </Col>
+            {(customFieldType === 'select' || customFieldType === 'checkbox') && (
+              <Col lg={12}>
+                <div className="mb-3">
+                  <TextFormInput 
+                    control={customFieldControl} 
+                    type="text" 
+                    name="options" 
+                    label="Options (virgülle ayrılmış)" 
+                    placeholder="Option 1, Option 2, Option 3" 
+                  />
+                </div>
+              </Col>
+            )}
+          </Row>
+        </ModalBody>
+        <ModalFooter>
+          <Button 
+            variant="secondary" 
+            onClick={() => {
+              resetCustomFieldForm();
+              setCustomFieldType('text');
+              setCustomFieldRequired('no');
+              toggleCustomFieldModal();
+            }}
+          >
+            İptal
+          </Button>
+          <Button variant="primary" type="submit" disabled={customFieldLoading}>
+            {customFieldLoading ? (
+              <>
+                <Spinner size="sm" className="me-2" />
+                Kaydediliyor...
+              </>
+            ) : (
+              'Kaydet'
+            )}
+          </Button>
+        </ModalFooter>
+      </form>
+    </Modal>
   </Row>;
 };
 export default AddProduct;

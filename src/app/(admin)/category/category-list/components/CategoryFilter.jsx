@@ -73,24 +73,25 @@ const CategoryFilter = ({ show, onHide, onFilter }) => {
   );
 
   const onSubmit = (raw) => {
-    const payload = { ...raw };
+    const payload = {};
 
-    // Boş stringleri kaldır
-    Object.keys(payload).forEach((k) => {
-      if (payload[k] === '') delete payload[k];
-    });
-
-    // UI status -> isActive
-    if (payload.status) {
-      payload.isActive = payload.status === 'active';
-      delete payload.status;
+    // Sadece API'de desteklenen filtreleri gönder
+    // categoryName, isActive, parentCategoryUUID
+    
+    if (raw.categoryName && raw.categoryName.trim() !== '') {
+      payload.categoryName = raw.categoryName.trim();
     }
 
-    // Tarihler ISO string (YYYY-MM-DD)
-    if (payload.createdFrom) payload.createdFrom = toISODate(payload.createdFrom);
-    if (payload.createdTo) payload.createdTo = toISODate(payload.createdTo);
-    if (payload.updatedFrom) payload.updatedFrom = toISODate(payload.updatedFrom);
-    if (payload.updatedTo) payload.updatedTo = toISODate(payload.updatedTo);
+    // UI status -> isActive
+    if (raw.status && raw.status !== '') {
+      payload.isActive = raw.status === 'active';
+    }
+
+    // Tarih filtreleri API'de desteklenmiyor, bu yüzden göndermiyoruz
+    // if (payload.createdFrom) payload.createdFrom = toISODate(payload.createdFrom);
+    // if (payload.createdTo) payload.createdTo = toISODate(payload.createdTo);
+    // if (payload.updatedFrom) payload.updatedFrom = toISODate(payload.updatedFrom);
+    // if (payload.updatedTo) payload.updatedTo = toISODate(payload.updatedTo);
 
     if (onFilter) onFilter(payload);
     onHide?.();
