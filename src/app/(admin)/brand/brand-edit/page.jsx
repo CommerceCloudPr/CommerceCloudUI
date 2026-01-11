@@ -10,18 +10,18 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import * as yup from 'yup';
-import { createBrand } from '@/utils/brandApi';
+import { fetchBrandDetail, updateBrand } from '@/utils/brandApi';
 import PageTItle from '@/components/PageTItle';
 
 const toastify = ({ props, message }) =>
   toast(message, { ...props, hideProgressBar: true, theme: 'colored', icon: false });
 
-const BrandAdd = () => {
+const BrandEdit = () => {
   const router = useRouter();
   const params = useSearchParams();
   const brandId = params.get('uuid');
   const [loading, setLoading] = useState(false);
-  const [initialLoading, setInitialLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
 
   const brandSchema = yup.object({
     brandName: yup.string().required('Brand adı gereklidir'),
@@ -46,38 +46,78 @@ const BrandAdd = () => {
     }
   });
 
-  // Brand-add sayfası sadece yeni brand oluşturmak için
-  // Edit için brand-edit sayfasını kullan
   useEffect(() => {
-    if (brandId) {
-      // Eğer UUID varsa edit sayfasına yönlendir
-      router.replace(`/brand/brand-edit?uuid=${brandId}`);
-    }
-    setInitialLoading(false);
-  }, [brandId, router]);
+    const loadBrand = async () => {
+      if (!brandId) {
+        toastify({
+          message: 'Brand ID bulunamadı',
+          props: { type: 'error' }
+        });
+        router.push('/brand/brand-list');
+        return;
+      }
 
-  const handleSaveBrand = async (data) => {
+      try {
+        const response = await fetchBrandDetail(brandId);
+        if (response.success && response.brand) {
+          reset({
+            brandName: response.brand.brandName || '',
+            brandCode: response.brand.brandCode || '',
+            brandDescription: response.brand.brandDescription || '',
+            brandLogoUrl: response.brand.brandLogoUrl || '',
+            isActive: response.brand.isActive !== false,
+          });
+        } else {
+          toastify({
+            message: 'Brand bulunamadı',
+            props: { type: 'error' }
+          });
+          router.push('/brand/brand-list');
+        }
+      } catch (error) {
+        console.error('Error loading brand:', error);
+        toastify({
+          message: error.message || 'Brand yüklenirken hata oluştu',
+          props: { type: 'error' }
+        });
+        router.push('/brand/brand-list');
+      } finally {
+        setInitialLoading(false);
+      }
+    };
+
+    loadBrand();
+  }, [brandId, reset, router]);
+
+  const handleUpdateBrand = async (data) => {
+    if (!brandId) {
+      toastify({
+        message: 'Brand ID bulunamadı',
+        props: { type: 'error' }
+      });
+      return;
+    }
+
     setLoading(true);
     try {
-      const response = await createBrand(data);
+      const response = await updateBrand(brandId, data);
 
       if (response.success) {
         toastify({
-          message: response.message || 'Brand başarıyla oluşturuldu',
+          message: response.message || 'Brand başarıyla güncellendi',
           props: { type: 'success' }
         });
-        reset();
         router.push('/brand/brand-list');
       } else {
         toastify({
-          message: response.message || 'Brand oluşturulurken hata oluştu',
+          message: response.message || 'Brand güncellenirken hata oluştu',
           props: { type: 'error' }
         });
       }
     } catch (error) {
-      console.error('Error creating brand:', error);
+      console.error('Error updating brand:', error);
       toastify({
-        message: error.message || 'Brand oluşturulurken bir hata oluştu',
+        message: error.message || 'Brand güncellenirken bir hata oluştu',
         props: { type: 'error' }
       });
     } finally {
@@ -95,11 +135,11 @@ const BrandAdd = () => {
 
   return (
     <>
-      <PageTItle title="BRAND ADD" />
-      <form onSubmit={handleSubmit(handleSaveBrand)}>
+      <PageTItle title="BRAND EDIT" />
+      <form onSubmit={handleSubmit(handleUpdateBrand)}>
         <Card>
           <CardHeader>
-            <CardTitle as="h4">Add Brand</CardTitle>
+            <CardTitle as="h4">Edit Brand</CardTitle>
           </CardHeader>
           <CardBody>
             <Row>
@@ -190,10 +230,10 @@ const BrandAdd = () => {
                   {loading ? (
                     <>
                       <Spinner size="sm" className="me-2" />
-                      Kaydediliyor...
+                      Güncelleniyor...
                     </>
                   ) : (
-                    'Kaydet'
+                    'Güncelle'
                   )}
                 </Button>
               </Col>
@@ -205,4 +245,4 @@ const BrandAdd = () => {
   );
 };
 
-export default BrandAdd;
+export default BrandEdit;

@@ -51,27 +51,32 @@ const normalizeImageUrls = (list) => {
         .filter(u => u.startsWith('http://') || u.startsWith('https://') || u.startsWith('blob:'));
 };
 
-/** tekil ürün normalizasyonu */
-const normalizeProduct = (p) => (
-     {
-    id: p.uuid,
-    name: p.brandName ?? '',
-}
-);
+/** tekil brand normalizasyonu */
+const normalizeBrand = (b) => ({
+    id: b.uuid,
+    uuid: b.uuid,
+    name: b.brandName ?? '',
+    brandName: b.brandName ?? '',
+    brandCode: b.brandCode ?? '',
+    brandDescription: b.brandDescription ?? '',
+    brandLogoUrl: b.brandLogoUrl ?? '',
+    isActive: Boolean(b.isActive),
+    createdAt: b.createdAt ?? null,
+    updatedAt: b.updatedAt ?? null,
+});
 
 /** response -> normalize { items, page, size, totalElements, ... } */
 const normalizeListResponse = (json) => {
     // beklenen json.success, json.data.content vs.
     const data = json?.data ?? {};
     const content = Array.isArray(data.content) ? data.content : [];
-    console.log(content.map(normalizeProduct))
     return {
         success: Boolean(json?.success),
         message: json?.message ?? '',
         statusCode: Number(json?.statusCode ?? 0),
         code: Number(json?.code ?? 0),
         timestamp: json?.timestamp ?? null,
-        items: content.map(normalizeProduct),
+        items: content.map(normalizeBrand),
         page: Number(data.page ?? 0),
         size: Number(data.size ?? content.length ?? 0),
         totalElements: Number(data.totalElements ?? content.length ?? 0),
@@ -102,16 +107,26 @@ export const fetchBrand = async (params = {}) => {
 
         // filtreli çağrı
         if (hasAnyFilter(params)) {
-            const url = `${API_BASE_URL}/product/brand/get-all`;
+            const url = `${API_BASE_URL}/product/brand/get-all/filtered`;
             const body = { pageRequest, queryFilter: buildQueryFilter(params) };
 
             const resp = await fetch(url, {
                 method: 'POST',
-                headers,
+                headers: {
+                    ...headers,
+                    'Accept': 'application/json',
+                },
                 body: JSON.stringify(body),
             });
 
-            if (!resp.ok) throw new Error(`HTTP error! status: ${resp.status}`);
+            if (!resp.ok) {
+                const errorText = await resp.text();
+                console.error('Brand fetch error response:', errorText);
+                if (resp.status === 401) {
+                    throw new Error('Yetkilendirme hatası. Lütfen tekrar giriş yapın.');
+                }
+                throw new Error(`HTTP error! status: ${resp.status}`);
+            }
             const json = await resp.json();
             return normalizeListResponse(json);
         }
@@ -125,18 +140,228 @@ export const fetchBrand = async (params = {}) => {
         qp.append('paginated', String(pageRequest.paginated));
 
         const url = `${API_BASE_URL}/product/brand/get-all?${qp.toString()}`;
-        const resp = await fetch(url, { method: 'GET', headers });
+        const resp = await fetch(url, { 
+            method: 'GET', 
+            headers: {
+                ...headers,
+                'Accept': 'application/json',
+            }
+        });
 
-        if (!resp.ok) throw new Error(`HTTP error! status: ${resp.status}`);
+        if (!resp.ok) {
+            const errorText = await resp.text();
+            console.error('Brand fetch error response:', errorText);
+            if (resp.status === 401) {
+                throw new Error('Yetkilendirme hatası. Lütfen tekrar giriş yapın.');
+            }
+            throw new Error(`HTTP error! status: ${resp.status}`);
+        }
         const json = await resp.json();
         return normalizeListResponse(json);
     } catch (error) {
-        console.error('Error fetching products:', error);
+        console.error('Error fetching brands:', error);
+        throw error;
+    }
+};
+
+/**
+ * Brand detayını getirir.
+ */
+export const fetchBrandDetail = async (uuid) => {
+    const headers = getAuthHeaders();
+
+    try {
+        const url = `${API_BASE_URL}/product/brand/get/${uuid}`;
+        const resp = await fetch(url, { 
+            method: 'GET', 
+            headers: {
+                ...headers,
+                'Accept': 'application/json',
+            }
+        });
+
+        if (!resp.ok) {
+            const errorText = await resp.text();
+            let errorMessage = `HTTP error! status: ${resp.status}`;
+            try {
+                const errorJson = JSON.parse(errorText);
+                errorMessage = errorJson.message || errorJson.error || errorMessage;
+                console.error('Backend error response:', errorJson);
+            } catch (e) {
+                console.error('Error response text:', errorText);
+            }
+            throw new Error(errorMessage);
+        }
+        
+        const json = await resp.json();
+        const data = json?.data || json;
+
+        return {
+            success: Boolean(json?.success),
+            message: json?.message ?? '',
+            brand: normalizeBrand(data),
+        };
+    } catch (error) {
+        console.error('Error fetching brand detail:', error);
+        throw error;
+    }
+};
+
+/**
+ * Yeni Brand oluşturur.
+ */
+export const createBrand = async (data) => {
+    const headers = getAuthHeaders();
+
+    try {
+        const url = `${API_BASE_URL}/product/brand/add`;
+        
+        const body = {
+            brandName: data.brandName || '',
+            brandCode: data.brandCode || '',
+            brandDescription: data.brandDescription || '',
+            brandLogoUrl: data.brandLogoUrl || '',
+            isActive: data.isActive !== false,
+        };
+
+        console.log('Creating brand with body:', body);
+
+        const resp = await fetch(url, {
+            method: 'POST',
+            headers: {
+                ...headers,
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify(body),
+        });
+
+        if (!resp.ok) {
+            const errorText = await resp.text();
+            let errorMessage = `HTTP error! status: ${resp.status}`;
+            try {
+                const errorJson = JSON.parse(errorText);
+                errorMessage = errorJson.message || errorJson.error || errorMessage;
+                console.error('Backend error response:', errorJson);
+            } catch (e) {
+                console.error('Error response text:', errorText);
+            }
+            throw new Error(errorMessage);
+        }
+        
+        const json = await resp.json();
+        const responseData = json?.data || json;
+
+        return {
+            success: Boolean(json?.success),
+            message: json?.message ?? '',
+            brand: normalizeBrand(responseData),
+        };
+    } catch (error) {
+        console.error('Error creating brand:', error);
+        throw error;
+    }
+};
+
+/**
+ * Brand günceller.
+ */
+export const updateBrand = async (uuid, data) => {
+    const headers = getAuthHeaders();
+
+    try {
+        const url = `${API_BASE_URL}/product/brand/update/${uuid}`;
+        
+        const body = {
+            brandName: data.brandName || '',
+            brandCode: data.brandCode || '',
+            brandDescription: data.brandDescription || '',
+            brandLogoUrl: data.brandLogoUrl || '',
+            isActive: Boolean(data.isActive),
+        };
+
+        console.log('Updating brand with body:', body);
+
+        const resp = await fetch(url, {
+            method: 'PUT',
+            headers: {
+                ...headers,
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify(body),
+        });
+
+        if (!resp.ok) {
+            const errorText = await resp.text();
+            let errorMessage = `HTTP error! status: ${resp.status}`;
+            try {
+                const errorJson = JSON.parse(errorText);
+                errorMessage = errorJson.message || errorJson.error || errorMessage;
+                console.error('Backend error response:', errorJson);
+            } catch (e) {
+                console.error('Error response text:', errorText);
+            }
+            throw new Error(errorMessage);
+        }
+        const json = await resp.json();
+        const responseData = json?.data || json;
+
+        return {
+            success: Boolean(json?.success),
+            message: json?.message ?? '',
+            brand: normalizeBrand(responseData),
+        };
+    } catch (error) {
+        console.error('Error updating brand:', error);
+        throw error;
+    }
+};
+
+/**
+ * Brand siler.
+ */
+export const deleteBrand = async (uuid) => {
+    const headers = getAuthHeaders();
+
+    try {
+        const url = `${API_BASE_URL}/product/brand/delete/${uuid}`;
+        const resp = await fetch(url, { 
+            method: 'DELETE', 
+            headers: {
+                ...headers,
+                'Accept': 'application/json',
+            }
+        });
+
+        if (!resp.ok) {
+            const errorText = await resp.text();
+            let errorMessage = `HTTP error! status: ${resp.status}`;
+            try {
+                const errorJson = JSON.parse(errorText);
+                errorMessage = errorJson.message || errorJson.error || errorMessage;
+            } catch (e) {
+                console.error('Error response text:', errorText);
+            }
+            throw new Error(errorMessage);
+        }
+        const json = await resp.json();
+
+        return {
+            success: Boolean(json?.success),
+            message: json?.message ?? '',
+        };
+    } catch (error) {
+        console.error('Error deleting brand:', error);
         throw error;
     }
 };
 
 /* ---------------------------- namespace --------------------------- */
 
-const brandApi = { fetchBrand };
+const brandApi = { 
+    fetchBrand,
+    fetchBrandDetail,
+    createBrand,
+    updateBrand,
+    deleteBrand,
+};
 export default brandApi;
