@@ -96,16 +96,26 @@ export const fetchAttributes = async (params = {}) => {
 
         // filtreli çağrı
         if (hasAnyFilter(params)) {
-            const url = `${API_BASE_URL}/product/attribute-definations/filtered`;
+            const url = `${API_BASE_URL}/product/attributes-definitions/filtered`;
             const body = { pageRequest, queryFilter: buildQueryFilter(params) };
 
             const resp = await fetch(url, {
                 method: 'POST',
-                headers,
+                headers: {
+                    ...headers,
+                    'Accept': 'application/json',
+                },
                 body: JSON.stringify(body),
             });
 
-            if (!resp.ok) throw new Error(`HTTP error! status: ${resp.status}`);
+            if (!resp.ok) {
+                const errorText = await resp.text();
+                console.error('Attribute fetch error response:', errorText);
+                if (resp.status === 401) {
+                    throw new Error('Yetkilendirme hatası. Lütfen tekrar giriş yapın.');
+                }
+                throw new Error(`HTTP error! status: ${resp.status}`);
+            }
             const json = await resp.json();
             return normalizeListResponse(json);
         }
@@ -119,18 +129,222 @@ export const fetchAttributes = async (params = {}) => {
         qp.append('paginated', String(pageRequest.paginated));
 
         const url = `${API_BASE_URL}/product/attributes-definitions/get-all?${qp.toString()}`;
-        const resp = await fetch(url, { method: 'GET', headers });
+        const resp = await fetch(url, { 
+            method: 'GET', 
+            headers: {
+                ...headers,
+                'Accept': 'application/json',
+            }
+        });
 
-        if (!resp.ok) throw new Error(`HTTP error! status: ${resp.status}`);
+        if (!resp.ok) {
+            const errorText = await resp.text();
+            console.error('Attribute fetch error response:', errorText);
+            if (resp.status === 401) {
+                throw new Error('Yetkilendirme hatası. Lütfen tekrar giriş yapın.');
+            }
+            throw new Error(`HTTP error! status: ${resp.status}`);
+        }
         const json = await resp.json();
         return normalizeListResponse(json);
     } catch (error) {
-        console.error('Error fetching products:', error);
+        console.error('Error fetching attributes:', error);
+        throw error;
+    }
+};
+
+/**
+ * Attribute detayını getirir.
+ */
+export const fetchAttributeDetail = async (uuid) => {
+    const headers = getAuthHeaders();
+
+    try {
+        const url = `${API_BASE_URL}/product/attributes-definitions/get/${uuid}`;
+        const resp = await fetch(url, { 
+            method: 'GET', 
+            headers: {
+                ...headers,
+                'Accept': 'application/json',
+            }
+        });
+
+        if (!resp.ok) {
+            const errorText = await resp.text();
+            let errorMessage = `HTTP error! status: ${resp.status}`;
+            try {
+                const errorJson = JSON.parse(errorText);
+                errorMessage = errorJson.message || errorJson.error || errorMessage;
+                console.error('Backend error response:', errorJson);
+            } catch (e) {
+                console.error('Error response text:', errorText);
+            }
+            throw new Error(errorMessage);
+        }
+        
+        const json = await resp.json();
+        const data = json?.data || json?.data?.attributeDefinition || json;
+
+        return {
+            success: Boolean(json?.success),
+            message: json?.message ?? '',
+            attribute: normalizeAttribute(data),
+        };
+    } catch (error) {
+        console.error('Error fetching attribute detail:', error);
+        throw error;
+    }
+};
+
+/**
+ * Yeni Attribute oluşturur.
+ */
+export const createAttribute = async (data) => {
+    const headers = getAuthHeaders();
+
+    try {
+        const url = `${API_BASE_URL}/product/attributes-definitions/add`;
+        
+        const body = {
+            attributeName: data.attributeName || data.name || '',
+            attributeType: data.attributeType || data.type || 'TEXT',
+        };
+
+        console.log('Creating attribute with body:', body);
+
+        const resp = await fetch(url, {
+            method: 'POST',
+            headers: {
+                ...headers,
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify(body),
+        });
+
+        if (!resp.ok) {
+            const errorText = await resp.text();
+            let errorMessage = `HTTP error! status: ${resp.status}`;
+            try {
+                const errorJson = JSON.parse(errorText);
+                errorMessage = errorJson.message || errorJson.error || errorMessage;
+                console.error('Backend error response:', errorJson);
+            } catch (e) {
+                console.error('Error response text:', errorText);
+            }
+            throw new Error(errorMessage);
+        }
+        
+        const json = await resp.json();
+        const responseData = json?.data || json?.data?.attributeDefinition || json;
+
+        return {
+            success: Boolean(json?.success),
+            message: json?.message ?? '',
+            attribute: normalizeAttribute(responseData),
+        };
+    } catch (error) {
+        console.error('Error creating attribute:', error);
+        throw error;
+    }
+};
+
+/**
+ * Attribute günceller.
+ */
+export const updateAttribute = async (uuid, data) => {
+    const headers = getAuthHeaders();
+
+    try {
+        const url = `${API_BASE_URL}/product/attributes-definitions/update/${uuid}`;
+        
+        const body = {
+            attributeName: data.attributeName || data.name || '',
+            attributeType: data.attributeType || data.type || 'TEXT',
+        };
+
+        console.log('Updating attribute with body:', body);
+
+        const resp = await fetch(url, {
+            method: 'PUT',
+            headers: {
+                ...headers,
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify(body),
+        });
+
+        if (!resp.ok) {
+            const errorText = await resp.text();
+            let errorMessage = `HTTP error! status: ${resp.status}`;
+            try {
+                const errorJson = JSON.parse(errorText);
+                errorMessage = errorJson.message || errorJson.error || errorMessage;
+                console.error('Backend error response:', errorJson);
+            } catch (e) {
+                console.error('Error response text:', errorText);
+            }
+            throw new Error(errorMessage);
+        }
+        const json = await resp.json();
+        const responseData = json?.data || json?.data?.attributeDefinition || json;
+
+        return {
+            success: Boolean(json?.success),
+            message: json?.message ?? '',
+            attribute: normalizeAttribute(responseData),
+        };
+    } catch (error) {
+        console.error('Error updating attribute:', error);
+        throw error;
+    }
+};
+
+/**
+ * Attribute siler.
+ */
+export const deleteAttribute = async (uuid) => {
+    const headers = getAuthHeaders();
+
+    try {
+        const url = `${API_BASE_URL}/product/attributes-definitions/delete/${uuid}`;
+        const resp = await fetch(url, { 
+            method: 'DELETE', 
+            headers: {
+                ...headers,
+                'Accept': 'application/json',
+            }
+        });
+
+        if (!resp.ok) {
+            const errorText = await resp.text();
+            let errorMessage = `HTTP error! status: ${resp.status}`;
+            try {
+                const errorJson = JSON.parse(errorText);
+                errorMessage = errorJson.message || errorJson.error || errorMessage;
+            } catch (e) {
+                console.error('Error response text:', errorText);
+            }
+            throw new Error(errorMessage);
+        }
+        const json = await resp.json();
+
+        return {
+            success: Boolean(json?.success),
+            message: json?.message ?? '',
+        };
+    } catch (error) {
+        console.error('Error deleting attribute:', error);
         throw error;
     }
 };
 
 /* ---------------------------- namespace --------------------------- */
 
-const attributeApi = { fetchAttributes };
+const attributeApi = { 
+    fetchAttributes,
+    fetchAttributeDetail,
+    createAttribute,
+    updateAttribute,
+    deleteAttribute,
+};
 export default attributeApi;

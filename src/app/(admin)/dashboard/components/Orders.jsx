@@ -1,10 +1,44 @@
+'use client';
 import IconifyIcon from '@/components/wrappers/IconifyIcon';
 import { getAllOrders } from '@/helpers/data';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button, Card, CardBody, CardFooter, CardTitle, Col, Row } from 'react-bootstrap';
-const Orders = async () => {
-  const orderData = await getAllOrders();
+import { useEffect, useState } from 'react';
+import Spinner from '@/components/Spinner';
+
+const Orders = () => {
+  const [orderData, setOrderData] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        const data = await getAllOrders();
+        setOrderData(data);
+      } catch (error) {
+        console.error('Error fetching orders:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchOrders();
+  }, []);
+
+  if (loading) {
+    return (
+      <Col>
+        <Card>
+          <CardBody>
+            <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '200px' }}>
+              <Spinner />
+            </div>
+          </CardBody>
+        </Card>
+      </Col>
+    );
+  }
+
   return <Col>
       <Card>
         <CardBody>
