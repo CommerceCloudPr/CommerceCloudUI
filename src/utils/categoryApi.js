@@ -101,37 +101,55 @@ const normalizeListResponse = (json) => {
  * }
  */
 export const fetchCategories = async (params = {}) => {
-  const headers = getAuthHeaders();
-
   try {
     const pageRequest = buildPageRequest(params);
+    
+    // Desteklenmeyen filtreleri temizle (tarih filtreleri vs.)
+    const cleanParams = {
+      categoryName: params.categoryName,
+      isActive: params.isActive,
+      parentCategoryUUID: params.parentCategoryUUID
+    };
 
-    // filtreli çağrı
-    if (hasAnyFilter(params)) {
-      const url = `${API_BASE_URL}/product/category/get-all/filtered`;
-      const body = { pageRequest, queryFilter: buildQueryFilter(params) };
-
-      const resp = await fetch(url, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(body),
-      });
-
-      if (!resp.ok) throw new Error(`HTTP error! status: ${resp.status}`);
-      const json = await resp.json();
-      return normalizeListResponse(json);
+    // Header'ları her çağrıda yeniden al
+    const headers = getAuthHeaders();
+    
+    if (!headers.Authorization) {
+      console.error('No authorization header found!');
+      throw new Error('Yetkilendirme hatası. Lütfen tekrar giriş yapın.');
     }
 
-    // filtresiz çağrı
+    // Tüm çağrılar için query parametreleriyle filtreleme kullan
+    // Filtered endpoint 401 hatası verdiği için GET endpoint'ini kullanıyoruz
     const qp = new URLSearchParams();
     qp.append('page', String(pageRequest.page));
     qp.append('size', String(pageRequest.size));
     qp.append('sortBy', pageRequest.sortBy);
     qp.append('sortDirection', pageRequest.sortDirection);
     qp.append('paginated', String(pageRequest.paginated));
+    
+    // Query parametreleriyle filtreleme
+    if (cleanParams.categoryName) {
+      qp.append('categoryName', cleanParams.categoryName);
+    }
+    if (cleanParams.isActive !== undefined && cleanParams.isActive !== null) {
+      qp.append('isActive', String(cleanParams.isActive));
+    }
+    if (cleanParams.parentCategoryUUID) {
+      qp.append('parentCategoryUUID', cleanParams.parentCategoryUUID);
+    }
 
     const url = `${API_BASE_URL}/product/category/get-all?${qp.toString()}`;
-    const resp = await fetch(url, { method: 'GET', headers });
+    console.log('Category fetch URL:', url);
+    console.log('Category fetch headers:', headers);
+    
+    const resp = await fetch(url, { 
+      method: 'GET', 
+      headers: {
+        ...headers,
+        'Accept': 'application/json',
+      }
+    });
 
     if (!resp.ok) throw new Error(`HTTP error! status: ${resp.status}`);
     const json = await resp.json();
@@ -166,8 +184,135 @@ export const fetchCategoryDetail = async (uuid) => {
   }
 };
 
+/**
+ * Yeni kategori oluşturur
+ */
+export const createCategory = async (data) => {
+  const headers = getAuthHeaders();
+
+  try {
+    const url = `${API_BASE_URL}/product/category/add`;
+    
+    const body = {
+      name: data.name || '',
+      description: data.description || null,
+    };
+    
+    if (data.parentUUID && data.parentUUID !== '' && data.parentUUID !== 'null') {
+      body.parentUUID = data.parentUUID;
+    }
+
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(body),
+    });
+
+    if (!resp.ok) {
+      const errorText = await resp.text();
+      let errorMessage = `HTTP error! status: ${resp.status}`;
+      try {
+        const errorJson = JSON.parse(errorText);
+        errorMessage = errorJson.message || errorJson.error || errorMessage;
+      } catch (e) {
+        console.error('Error response text:', errorText);
+      }
+      throw new Error(errorMessage);
+    }
+    
+    const json = await resp.json();
+
+    return {
+      success: Boolean(json?.success),
+      message: json?.message ?? '',
+      category: json?.data?.category ? normalizeCategory(json.data.category) : (json?.data ? normalizeCategory(json.data) : null),
+    };
+  } catch (error) {
+    console.error('Error creating category:', error);
+    throw error;
+  }
+};
+
+/**
+ * Kategori günceller
+ */
+export const updateCategory = async (uuid, data) => {
+  const headers = getAuthHeaders();
+
+  try {
+    const url = `${API_BASE_URL}/product/category/update/${uuid}`;
+    
+    const body = {
+      name: data.name || '',
+      description: data.description || null,
+    };
+    
+    if (data.parentUUID && data.parentUUID !== '' && data.parentUUID !== 'null') {
+      body.parentUUID = data.parentUUID;
+    }
+
+    const resp = await fetch(url, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify(body),
+    });
+
+    if (!resp.ok) {
+      const errorText = await resp.text();
+      let errorMessage = `HTTP error! status: ${resp.status}`;
+      try {
+        const errorJson = JSON.parse(errorText);
+        errorMessage = errorJson.message || errorJson.error || errorMessage;
+      } catch (e) {
+        console.error('Error response text:', errorText);
+      }
+      throw new Error(errorMessage);
+    }
+    
+    const json = await resp.json();
+
+    return {
+      success: Boolean(json?.success),
+      message: json?.message ?? '',
+      category: json?.data?.category ? normalizeCategory(json.data.category) : (json?.data ? normalizeCategory(json.data) : null),
+    };
+  } catch (error) {
+    console.error('Error updating category:', error);
+    throw error;
+  }
+};
+
+/**
+ * Kategori siler
+ */
+export const deleteCategory = async (uuid) => {
+  const headers = getAuthHeaders();
+
+  try {
+    const url = `${API_BASE_URL}/product/category/delete/${uuid}`;
+    const resp = await fetch(url, { method: 'DELETE', headers });
+
+    if (!resp.ok) throw new Error(`HTTP error! status: ${resp.status}`);
+    const json = await resp.json();
+
+    return {
+      success: Boolean(json?.success),
+      message: json?.message ?? '',
+    };
+  } catch (error) {
+    console.error('Error deleting category:', error);
+    throw error;
+  }
+};
+
 /* ---------------------------- namespace --------------------------- */
 
-const categoryApi = { fetchCategories, fetchCategoryDetail };
+const categoryApi = { 
+  fetchCategories, 
+  fetchCategoryDetail, 
+  createCategory, 
+  updateCategory, 
+  deleteCategory 
+};
 export default categoryApi;
 
