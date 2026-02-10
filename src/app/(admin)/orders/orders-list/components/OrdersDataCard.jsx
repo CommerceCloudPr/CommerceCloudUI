@@ -1,35 +1,48 @@
-import React from 'react';
-import { orderData } from '../data';
+'use client';
+
 import IconifyIcon from '@/components/wrappers/IconifyIcon';
-import { Card, CardBody, CardTitle, Col, Row } from 'react-bootstrap';
+import { orderData } from '../data';
+import { Card, CardBody, Col, Row } from 'react-bootstrap';
+
 const OrderCard = ({
   icon,
   item,
-  title
+  title,
+  color
 }) => {
-  return <Card>
+  return (
+    <Card className="card-animate">
       <CardBody>
-        <div className="d-flex align-items-center justify-content-between">
+        <div className="d-flex justify-content-between">
           <div>
-            <CardTitle as={'h4'} className="mb-2">
-              {title}
-            </CardTitle>
-            <p className="text-muted fw-medium fs-22 mb-0">{item}</p>
+            <p className="fw-medium text-muted mb-0">{title}</p>
+            <h2 className="mt-4 ff-secondary fw-semibold">
+              <span className="counter-value">{item}</span>
+            </h2>
           </div>
           <div>
-            <div className="avatar-md bg-primary bg-opacity-10 rounded flex-centered">
-              <IconifyIcon height={32} width={32} icon={icon} className="fs-32 text-primary" />
+            <div className="avatar-sm flex-shrink-0">
+              <span className={`avatar-title bg-${color}-subtle text-${color} rounded-circle fs-3`}>
+                <IconifyIcon icon={icon} />
+              </span>
             </div>
           </div>
         </div>
       </CardBody>
-    </Card>;
+    </Card>
+  );
 };
+
 const OrdersDataCardPage = () => {
-  return <Row>
-      {orderData.map((item, idx) => <Col md={6} xl={3} key={idx}>
+  return (
+    <Row>
+      {orderData.map((item, idx) => (
+        <Col xl={3} md={6} key={idx}>
           <OrderCard {...item} />
-        </Col>)}
-    </Row>;
+        </Col>
+      ))}
+    </Row>
+  );
 };
+
 export default OrdersDataCardPage;
